@@ -2,7 +2,6 @@
 
 Una API RESTful robusta y escalable diseñada para la gestión colaborativa de proyectos y tareas. Este sistema permite a los usuarios crear espacios de trabajo, asignar tareas, gestionar estados mediante un flujo de trabajo definido, y colaborar a través de comentarios con soporte para menciones y archivos adjuntos multimedia.
 
-El proyecto implementa una arquitectura de microservicios monolítica, priorizando la seguridad, el desacoplamiento mediante DTOs y el manejo eficiente de recursos en la nube.
 
 ## 🚀 Características Principales
 
