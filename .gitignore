@@ -1,0 +1,49 @@
+# --- Maven (Compilación) ---
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+dependency-reduced-pom.xml
+
+# --- Eclipse / Spring Tools Suite (Tus herramientas actuales) ---
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings/
+.springBeans
+.sts4-cache
+bin/
+.metadata/
+
+# --- Logs y Archivos Temporales ---
+*.log
+*.ctxt
+.mtj.tmp/
+
+# --- Archivos de Sistema Operativo (Para mantener limpio el repo) ---
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# --- IDEs de otros colaboradores (IntelliJ, VSCode, NetBeans) ---
+.idea/
+*.iws
+*.iml
+*.ipr
+.vscode/
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+
+# --- SEGURIDAD (¡Importante!) ---
+# Ignora archivos que suelen tener claves o configuraciones locales
+# Si tu application.properties tiene secretos REALES, descomenta la siguiente línea:
+# src/main/resources/application.properties
+
+.env
+.env.local
+hs_err_pid*
