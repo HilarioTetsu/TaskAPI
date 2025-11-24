@@ -1,5 +1,6 @@
 package com.springboot.app.controllers;
 
+import java.util.List;
 import java.util.NoSuchElementException;
 
 import org.springframework.http.HttpStatus;
@@ -20,7 +21,6 @@ import com.springboot.app.models.dtos.TareaDto;
 import com.springboot.app.models.services.IProjectMemberService;
 import com.springboot.app.models.services.IProjectService;
 import com.springboot.app.models.services.ITareaService;
-import com.springboot.app.models.services.IUsuarioService;
 import com.springboot.app.utils.Constants;
 import com.springboot.app.utils.CustomUserDetails;
 import com.springboot.app.utils.ProjectRole;
@@ -37,229 +37,117 @@ public class ProjectController {
 
 	private final IProjectMemberService projectMemberService;
 
-	private final IUsuarioService usuarioService;
+	
 
 	public ProjectController(IProjectService projectService, ITareaService tareaService,
-			IProjectMemberService projectMemberService, IUsuarioService usuarioService) {
+			IProjectMemberService projectMemberService) {
 		super();
 		this.projectService = projectService;
 		this.tareaService = tareaService;
-		this.projectMemberService = projectMemberService;
-		this.usuarioService = usuarioService;
+		this.projectMemberService = projectMemberService;		
 	}
 
 	@GetMapping("/roles")
-	public ResponseEntity<?> getProjectRoles() {
+	public ResponseEntity<ProjectRole[]> getProjectRoles() {
 
-		try {
-
-			return new ResponseEntity<Object>(ProjectRole.values(), HttpStatus.OK);
-
-		} catch (Exception e) {
-			e.printStackTrace();
-			return new ResponseEntity<Object>("Error en el servidor", HttpStatus.INTERNAL_SERVER_ERROR);
-		}
+		return new ResponseEntity<ProjectRole[]>(ProjectRole.values(), HttpStatus.OK);
 
 	}
 
 	@GetMapping("/{id}")
-	public ResponseEntity<?> getByProjectId(@AuthenticationPrincipal CustomUserDetails authUser,
+	public ResponseEntity<ProjectDto> getByProjectId(@AuthenticationPrincipal CustomUserDetails authUser,
 			@PathVariable String id) {
 
-		try {
-
-			return new ResponseEntity<Object>(projectService.findByProjectIdAndUserId(id, authUser.getUserId()),
-					HttpStatus.OK);
-
-		} catch (Exception e) {
-			e.printStackTrace();
-			return new ResponseEntity<Object>("Error en el servidor", HttpStatus.INTERNAL_SERVER_ERROR);
-		}
+		return ResponseEntity.ok().body((projectService.findByProjectIdAndUserId(id, authUser.getUserId())));
 
 	}
 
 	@GetMapping
-	public ResponseEntity<?> getAllProjects(@AuthenticationPrincipal CustomUserDetails authUser) {
+	public ResponseEntity<List<ProjectDto>> getAllProjects(@AuthenticationPrincipal CustomUserDetails authUser) {
 
-		try {
-
-			return new ResponseEntity<Object>(projectService.findByOwnerId(authUser.getUserId()), HttpStatus.OK);
-
-		} catch (Exception e) {
-			e.printStackTrace();
-			return new ResponseEntity<Object>("Error en el servidor", HttpStatus.INTERNAL_SERVER_ERROR);
-		}
+		return ResponseEntity.ok().body(projectService.findByOwnerId(authUser.getUserId()));
 
 	}
 
 	@PostMapping
-	public ResponseEntity<?> saveProject(@RequestBody @Valid ProjectDto dto,
+	public ResponseEntity<ProjectDto> saveProject(@RequestBody @Valid ProjectDto dto,
 			@AuthenticationPrincipal CustomUserDetails authUser) {
 
-		try {
-
-			return new ResponseEntity<Object>(projectService.save(dto, authUser.getUserId()), HttpStatus.CREATED);
-		} catch (Exception e) {
-			e.printStackTrace();
-			return new ResponseEntity<Object>("Error en el servidor", HttpStatus.INTERNAL_SERVER_ERROR);
-		}
+		return new ResponseEntity<ProjectDto>(projectService.save(dto, authUser.getUserId()), HttpStatus.CREATED);
 
 	}
 
 	@PostMapping("/{id}/members")
-	public ResponseEntity<?> addProjectMember(@RequestBody @Valid ProjectMemberDto dto,
+	public ResponseEntity<ProjectMemberDto> addProjectMember(@RequestBody @Valid ProjectMemberDto dto,
 			@AuthenticationPrincipal CustomUserDetails authUser, @PathVariable("id") String projectId) {
 
-		try {
-
-			
-
-			return new ResponseEntity<Object>(projectMemberService.save(projectId, dto, authUser), HttpStatus.CREATED);
-
-		} catch (IllegalArgumentException e) {
-	        return ResponseEntity.badRequest().body(e.getMessage());
-	    } catch (SecurityException e) {
-	        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
-	    } catch (NoSuchElementException e) {
-	        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
-	    } catch (IllegalStateException e) {
-	        return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
-	    } catch (Exception e) {
-	        e.printStackTrace();
-	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-	                .body("Error en el servidor");
-	    }
+		return new ResponseEntity<ProjectMemberDto>(projectMemberService.save(projectId, dto, authUser),
+				HttpStatus.CREATED);
 
 	}
 
 	@PostMapping("/{id}/task")
-	public ResponseEntity<?> saveTaskInProject(@RequestBody @Valid TareaDto dto,
+	public ResponseEntity<TareaDto> saveTaskInProject(@RequestBody @Valid TareaDto dto,
 			@AuthenticationPrincipal CustomUserDetails authUser, @PathVariable(name = "id") String projectId) {
-		try {
 
-			if (!projectService.existsProjectActive(projectId)) {
-				return new ResponseEntity<Object>("Elementos no encontrados", HttpStatus.NOT_FOUND);
-			}
-
-			dto.setProject_id(projectId);
-
-			return new ResponseEntity<Object>(tareaService.save(dto, authUser.getUserId()), HttpStatus.CREATED);
-		} catch (Exception e) {
-			e.printStackTrace();
-			return new ResponseEntity<Object>("Error en el servidor", HttpStatus.INTERNAL_SERVER_ERROR);
+		if (!projectService.existsProjectActive(projectId)) {
+			throw new NoSuchElementException("Elementos no encontrados");
 		}
+
+		dto.setProject_id(projectId);
+
+		return new ResponseEntity<TareaDto>(tareaService.save(dto, authUser.getUserId()), HttpStatus.CREATED);
 
 	}
 
 	@PatchMapping
-	public ResponseEntity<?> updateProject(@RequestBody @Valid ProjectDto dto,
+	public ResponseEntity<ProjectDto> updateProject(@RequestBody @Valid ProjectDto dto,
 			@AuthenticationPrincipal CustomUserDetails authUser) {
 
-		try {
-
-			return new ResponseEntity<Object>(projectService.save(dto, authUser.getUserId()), HttpStatus.OK);
-		} catch (Exception e) {
-			e.printStackTrace();
-			return new ResponseEntity<Object>("Error en el servidor", HttpStatus.INTERNAL_SERVER_ERROR);
-		}
+		return ResponseEntity.ok().body(projectService.save(dto, authUser.getUserId()));
 
 	}
 
 	@PatchMapping("/{projectId}/members/{userId}")
-	public ResponseEntity<?> updateProjectMember(@RequestBody ProjectMemberDto dto,
+	public ResponseEntity<ProjectMemberDto> updateProjectMember(@RequestBody @Valid ProjectMemberDto dto,
 			@AuthenticationPrincipal CustomUserDetails authUser, @PathVariable String projectId,
 			@PathVariable Long userId) {
 
-		try {
+		projectMemberService.validationOwnerAndMemberProject(dto, userId, authUser.getUserId(), projectId);
 
-			if (projectMemberService.validationOwnerAndMemberProject(dto,userId, authUser.getUserId(), projectId)) {
+		dto.setId(projectMemberService.findByUsuarioIdAndProjectIdGuid(userId, projectId).getId());
+		dto.setUsuarioId(userId);
+		dto.setProjectId(projectId);
 
-				
-				dto.setId(projectMemberService.findByUsuarioIdAndProjectIdGuid(userId, projectId).getId());
-				dto.setUsuarioId(userId);
-				dto.setProjectId(projectId);
-				
-				return new ResponseEntity<Object>(projectMemberService.save(projectId, dto, authUser), HttpStatus.CREATED);
-				
-			}
+		return new ResponseEntity<ProjectMemberDto>(projectMemberService.save(projectId, dto, authUser),
+				HttpStatus.CREATED);
 
-			
-			
-			return null;
-		} catch (IllegalArgumentException e) {
-	        return ResponseEntity.badRequest().body(e.getMessage());
-	    } catch (SecurityException e) {
-	        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
-	    } catch (NoSuchElementException e) {
-	        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
-	    } catch (IllegalStateException e) {
-	        return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
-	    } catch (Exception e) {
-	        e.printStackTrace();
-	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-	                .body("Error en el servidor");
-	    }
 	}
-	
-	
+
 	@GetMapping("/{projectId}/members")
-	public ResponseEntity<?> getProjectMembers(@AuthenticationPrincipal CustomUserDetails authUser,
+	public ResponseEntity<List<ProjectMemberDto>> getProjectMembers(@AuthenticationPrincipal CustomUserDetails authUser,
 			@PathVariable String projectId) {
 
-		try {
-
-			return new ResponseEntity<Object>(projectMemberService.findProjectMembersByProjectId(authUser.getUserId(),projectId), HttpStatus.OK);
-
-		} catch (SecurityException e) {
-	        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
-	    }catch (NoSuchElementException e) {
-	        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
-	    } catch (Exception e) {
-			e.printStackTrace();
-			return new ResponseEntity<Object>("Error en el servidor", HttpStatus.INTERNAL_SERVER_ERROR);
-		}
+		return ResponseEntity.ok(projectMemberService.findProjectMembersByProjectId(authUser.getUserId(), projectId));
 
 	}
-
 
 	@GetMapping("/{id}/tasks")
 	public ResponseEntity<?> getTasksByProjectId(@PathVariable String id,
 			@AuthenticationPrincipal CustomUserDetails authUser) {
 
-		try {
-
-			return new ResponseEntity<Object>(projectService.findTasksByProjectId(id, authUser.getUserId()),
-					HttpStatus.OK);
-
-		} catch (Exception e) {
-			e.printStackTrace();
-			return new ResponseEntity<Object>("Error en el servidor", HttpStatus.INTERNAL_SERVER_ERROR);
-		}
+		return ResponseEntity.ok(projectService.findTasksByProjectId(id, authUser.getUserId()));
 
 	}
-	
-	
+
 	@DeleteMapping("/{projectId}")
-	public ResponseEntity<?> eliminarProjecto(
-			@PathVariable String projectId,
-			@AuthenticationPrincipal CustomUserDetails authUser){
-		
-		try {
+	public ResponseEntity<Void> eliminarProjecto(@PathVariable String projectId,
+			@AuthenticationPrincipal CustomUserDetails authUser) {
 
-			projectService.deleteTarea(projectId,authUser.getUserId());
-			
-			return ResponseEntity.noContent().build();
+		projectService.deleteTarea(projectId, authUser.getUserId());
 
-		} catch (SecurityException e) {
-	        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
-	    } catch (NoSuchElementException e) {
-	        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
-	    } catch (IllegalStateException e) {
-	        return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
-	    } catch (Exception e) {
-			e.printStackTrace();
-			return new ResponseEntity<Object>("Error al realizar la operacion", HttpStatus.INTERNAL_SERVER_ERROR);
-		}
+		return ResponseEntity.noContent().build();
+
 	}
 
 }

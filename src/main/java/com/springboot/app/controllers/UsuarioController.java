@@ -1,8 +1,8 @@
 package com.springboot.app.controllers;
 
+import java.util.List;
 import java.util.NoSuchElementException;
 
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -24,33 +24,23 @@ public class UsuarioController {
 	}
 
 	@GetMapping()
-	public ResponseEntity<?> getAllUsers() {
+	public ResponseEntity<List<UsuarioDto>> getAllUsers() {
 
-		try {
-
-			
-			return new ResponseEntity<Object>(usuarioService.findByStatusIs(Constants.STATUS_ACTIVE), HttpStatus.OK);
-
-		} catch (Exception e) {
-			e.printStackTrace();
-			return new ResponseEntity<Object>("Error al realizar la operacion", HttpStatus.INTERNAL_SERVER_ERROR);
-		}
+		
+			return ResponseEntity.ok(usuarioService.findByStatusIs(Constants.STATUS_ACTIVE));
 
 	}
 
 	@GetMapping("/{data}")
-	public ResponseEntity<?> getByEmailOrUsername(@PathVariable(required = true) String data) {
+	public ResponseEntity<UsuarioDto> getByEmailOrUsername(@PathVariable(required = true) String data) {
 
-		try {
 
 			UsuarioDto userDto = usuarioService.findByEmailOrUsernameAndStatusIs(data, data)
 					.orElseThrow(() -> new NoSuchElementException("Usuario no encontrado"));
 
-			return new ResponseEntity<Object>(userDto, HttpStatus.OK);
-		} catch (Exception e) {
-			e.printStackTrace();
-			return new ResponseEntity<Object>("Error al realizar la operacion", HttpStatus.INTERNAL_SERVER_ERROR);
-		}
+			return ResponseEntity.ok(userDto);
+						
+		
 	}
 
 

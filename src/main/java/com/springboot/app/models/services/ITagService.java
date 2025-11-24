@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
+
 import com.springboot.app.models.dtos.TagDto;
 import com.springboot.app.models.entities.Tag;
 
@@ -14,7 +15,7 @@ public interface ITagService {
 	
 	List<TagDto> findByNameContaining(String nameTag);
 	
-	Optional<TagDto> getTagActiveByIdOrName(Integer id,String nameTag);
+	TagDto getTagActiveByIdOrName(Integer id,String nameTag);
 	
 	Optional<Tag> getTagActiveById(Integer id);
 	

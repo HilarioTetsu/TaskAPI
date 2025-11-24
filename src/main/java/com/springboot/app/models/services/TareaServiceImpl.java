@@ -18,6 +18,7 @@ import com.springboot.app.models.dao.IPrioridadTareaDao;
 import com.springboot.app.models.dao.ITareaDao;
 import com.springboot.app.models.dao.ITareaStatusDao;
 import com.springboot.app.models.dao.ITareaTagsDao;
+import com.springboot.app.models.dtos.PrioridadTareaDto;
 import com.springboot.app.models.dtos.TagDto;
 import com.springboot.app.models.dtos.TareaDto;
 import com.springboot.app.models.entities.PrioridadTarea;
@@ -49,6 +50,8 @@ public class TareaServiceImpl implements ITareaService {
 
 	private final IProjectMemberService projectMemberService;
 	
+	private final ITagService tagService;
+
 
 
 
@@ -56,7 +59,7 @@ public class TareaServiceImpl implements ITareaService {
 
 	public TareaServiceImpl(ITareaDao tareaDao, IPrioridadTareaDao prioridadDao, ITareaStatusDao tareaStatusDao,
 			ITareaTagsDao tareaTagsDao, IUsuarioService usuarioService, IProjectService projectService,
-			IProjectMemberService projectMemberService) {
+			IProjectMemberService projectMemberService, ITagService tagService) {
 		super();
 		this.tareaDao = tareaDao;
 		this.prioridadDao = prioridadDao;
@@ -65,6 +68,7 @@ public class TareaServiceImpl implements ITareaService {
 		this.usuarioService = usuarioService;
 		this.projectService = projectService;
 		this.projectMemberService = projectMemberService;
+		this.tagService = tagService;
 	}
 
 
@@ -182,7 +186,14 @@ public class TareaServiceImpl implements ITareaService {
 
 	@Override
 	@Transactional(readOnly = true)
-	public List<TagDto> asignarTag(Tarea tarea,Tag tag) {
+	public List<TagDto> asignarTag(String tareaId,Integer tagId,Long authUserId) {
+		
+		Tarea tarea = findTareaByIdGuid(tareaId,authUserId).orElseThrow(() -> new NoSuchElementException("Tarea no encontrada"));
+
+
+		Tag tag = tagService.getTagActiveById(tagId).orElseThrow(() -> new NoSuchElementException("Tag no encontrado"));
+
+				
 		
 		if (tarea.getTareaTagsList().stream().anyMatch(x ->x.getTag().getId().equals(tag.getId()))) {
 			throw new IllegalStateException("Tag ya asociado a la tarea");
@@ -340,6 +351,14 @@ public class TareaServiceImpl implements ITareaService {
 	public Optional<Tarea> findByIdGuid(String tareaId) {
 		
 		return tareaDao.findById(tareaId);
+	}
+
+
+
+	@Override
+	public List<PrioridadTareaDto> findAllPrioridadesTarea() {
+		
+		return prioridadDao.findAll().stream().map(p -> new PrioridadTareaDto(p)).toList();
 	}
 
 

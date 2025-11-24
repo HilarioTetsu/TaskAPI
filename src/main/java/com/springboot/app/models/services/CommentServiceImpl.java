@@ -20,8 +20,6 @@ import com.springboot.app.models.entities.Usuario;
 import com.springboot.app.utils.Constants;
 import com.springboot.app.utils.Utils;
 
-import jakarta.validation.Valid;
-
 @Service
 public class CommentServiceImpl implements ICommentService {
 

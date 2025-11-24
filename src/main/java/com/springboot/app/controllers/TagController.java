@@ -1,6 +1,8 @@
 package com.springboot.app.controllers;
 
-import org.springframework.http.HttpStatus;
+import java.util.List;
+
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -29,76 +31,53 @@ public class TagController {
 	}
 
 	@GetMapping
-	public ResponseEntity<?> getAll(@RequestParam(required = false, defaultValue = "10") int tamanio,
+	public ResponseEntity<Page<TagDto>> getAll(@RequestParam(required = false, defaultValue = "10") int tamanio,
 			@RequestParam(required = false, defaultValue = "0") int pagina) {
 
-		try {
 
-			return new ResponseEntity<Object>(tagService.getAll(pagina, tamanio), HttpStatus.OK);
-		} catch (Exception e) {
-			e.printStackTrace();
-			return new ResponseEntity<Object>("Error al obtener la informacion", HttpStatus.INTERNAL_SERVER_ERROR);
-		}
+		return ResponseEntity.ok(tagService.getAll(pagina, tamanio));
+		
+		
+				
 
 	}
 
 	@GetMapping("/name/{nameTag}")
-	public ResponseEntity<?> getByName(@PathVariable(required = true) String nameTag) {
+	public ResponseEntity<List<TagDto>> getByName(@PathVariable(required = true) String nameTag) {
 
-		try {
-
-			return new ResponseEntity<Object>(tagService.findByNameContaining(nameTag), HttpStatus.OK);
-		} catch (Exception e) {
-			e.printStackTrace();
-			return new ResponseEntity<Object>("Error al obtener la informacion", HttpStatus.INTERNAL_SERVER_ERROR);
-		}
+		
+		return ResponseEntity.ok(tagService.findByNameContaining(nameTag));
+								
 
 	}
 
 	@GetMapping("/{id}")
-	public ResponseEntity<?> getByIdOrName(@PathVariable(required = false) Integer id,
+	public ResponseEntity<TagDto> getByIdOrName(@PathVariable(required = false) Integer id,
 			@RequestParam(required = false) String nameTag) {
 
-		try {
 
-			return new ResponseEntity<Object>(tagService.getTagActiveByIdOrName(id, nameTag), HttpStatus.OK);
-		} catch (Exception e) {
-			e.printStackTrace();
-			return new ResponseEntity<Object>("Error al obtener la informacion", HttpStatus.INTERNAL_SERVER_ERROR);
-		}
+			return ResponseEntity.ok(tagService.getTagActiveByIdOrName(id, nameTag));
+			
 
 	}
 
 	@PostMapping
-	public ResponseEntity<?> crearTag(@Valid @RequestBody TagDto dto) {
+	public ResponseEntity<TagDto> crearTag(@Valid @RequestBody TagDto dto) {
 
-		try {
-
-			return new ResponseEntity<Object>(tagService.save(dto), HttpStatus.OK);
-		} catch (Exception e) {
-			e.printStackTrace();
-			return new ResponseEntity<Object>("Error al obtener la informacion", HttpStatus.INTERNAL_SERVER_ERROR);
-		}
+		
+		
+		return ResponseEntity.ok(tagService.save(dto));
+		
 
 	}
 	
 
 	
 	@PatchMapping
-	public ResponseEntity<?> actualizarTag(@Valid @RequestBody TagDto dto) {
+	public ResponseEntity<TagDto> actualizarTag(@Valid @RequestBody TagDto dto) {
 
-		try {
+		return ResponseEntity.ok(tagService.save(dto));					
 
-			if (tagService.getTagActiveByIdOrName(dto.getId(), null).isEmpty()) {
-				return new ResponseEntity<Object>("Tag no encontrado", HttpStatus.NOT_FOUND);
-			}
-			
-			
-			return new ResponseEntity<Object>(tagService.save(dto), HttpStatus.OK);
-		} catch (Exception e) {
-			e.printStackTrace();
-			return new ResponseEntity<Object>("Error al obtener la informacion", HttpStatus.INTERNAL_SERVER_ERROR);
-		}
 
 	}
 

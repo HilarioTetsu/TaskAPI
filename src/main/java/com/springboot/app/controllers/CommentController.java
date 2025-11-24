@@ -1,7 +1,6 @@
 package com.springboot.app.controllers;
 
 import java.util.List;
-import java.util.NoSuchElementException;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -30,7 +29,6 @@ import com.springboot.app.models.services.MediaStorageService;
 import com.springboot.app.utils.Constants;
 import com.springboot.app.utils.CustomUserDetails;
 
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 
 @RestController
@@ -65,8 +63,7 @@ public class CommentController {
 			@RequestParam(required = false) String tareaId,
 			@AuthenticationPrincipal CustomUserDetails authUser){
 				
-		try {
-		
+	
 					if (StringUtils.hasText(tareaId)) {
 						
 						return ResponseEntity.ok().body(commentService.getAllByTareaId(pagina,tamanio,sorts,authUser.getUserId(),tareaId));
@@ -75,23 +72,15 @@ public class CommentController {
 			
 			return ResponseEntity.ok().body(commentService.getAll(pagina,tamanio,sorts,authUser.getUserId()));
 		
-		} catch (IllegalArgumentException e) {
-	        return ResponseEntity.badRequest().body(e.getMessage());	    
-		} catch (Exception e) {
-			e.printStackTrace();
-			return new ResponseEntity<Object>("Error al obtener la informacion", HttpStatus.INTERNAL_SERVER_ERROR);
-		}
-		
-		
+
 	}
 	
 
 	@PostMapping("/attachment/presign")
-	public ResponseEntity<?> createUploadUrl(@RequestBody List<UploadRequestDto> adjuntos,
+	public ResponseEntity<List<UploadResponseDto>> createUploadUrl(@RequestBody List<UploadRequestDto> adjuntos,
 			@AuthenticationPrincipal CustomUserDetails authUser){
 				
-		try {
-		
+	
 			if (adjuntos.size()>10) throw new IllegalArgumentException("Máximo 10 archivos");
 			
 			List<UploadResponseDto> urlResponses= mediaService.createUploadUrls(adjuntos,maxSizeBytes,authUser.getUserId());
@@ -99,22 +88,15 @@ public class CommentController {
 			
 			return ResponseEntity.ok().body(urlResponses);
 		
-		} catch (IllegalArgumentException e) {
-	        return ResponseEntity.badRequest().body(e.getMessage());	    
-		} catch (Exception e) {
-			e.printStackTrace();
-			return new ResponseEntity<Object>("Error al obtener la informacion", HttpStatus.INTERNAL_SERVER_ERROR);
-		}
-		
+
 		
 	}
 	
 	@PostMapping
-	public ResponseEntity<?> createCommAndConfirmAttachments(@RequestBody CommentDto dto,
+	public ResponseEntity<CommentDto> createCommAndConfirmAttachments(@RequestBody CommentDto dto,
 			@AuthenticationPrincipal CustomUserDetails authUser){
 				
-		try {
-		
+	
 			if (dto.getConfirmMediaStorageKeyId()==null || dto.getConfirmMediaStorageKeyId().size()==0) {
 				return ResponseEntity.ok().body(commentService.saveComment(dto,authUser.getUserId()));
 			}
@@ -126,75 +108,35 @@ public class CommentController {
 			List<Media> mediasSaved = mediaService.updateStatusMedia(dto.getConfirmMediaStorageKeyId(),authUser.getUserId());
 			
 			return ResponseEntity.status(HttpStatus.CREATED).body(commentService.saveComment(dto,mediasSaved,authUser.getUserId()));
-						 
-			 
-		} catch (IllegalArgumentException e) {
-	        return ResponseEntity.badRequest().body(e.getMessage());
-	    } catch (SecurityException e) {
-	        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
-	    } catch (NoSuchElementException e) {
-	        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
-	    } catch (IllegalStateException e) {
-	        return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
-	    } catch (Exception e) {
-	        e.printStackTrace();
-	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-	                .body("Error en el servidor");
-	    }
+						 			 
+
 	}
 	
 	
 	@DeleteMapping("/{commentId}")
-	public ResponseEntity<?> deleteComment(@PathVariable @NotNull Long commentId,
+	public ResponseEntity<Void> deleteComment(@PathVariable @NotNull Long commentId,
 			@AuthenticationPrincipal CustomUserDetails authUser){
-				
-		try {
+
+		
 		
 			commentService.deleteComment(commentId,authUser.getUserId());
 			
 			return ResponseEntity.noContent().build();
-		
-		} catch (IllegalArgumentException e) {
-	        return ResponseEntity.badRequest().body(e.getMessage());
-	    } catch (SecurityException e) {
-	        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
-	    } catch (NoSuchElementException e) {
-	        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
-	    } catch (IllegalStateException e) {
-	        return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
-	    } catch (Exception e) {
-	        e.printStackTrace();
-	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-	                .body("Error en el servidor");
-	    }
+			
+			
 	
 	}
 	
 	
 	@PatchMapping("/{commentId}")
-	public ResponseEntity<?> updateComment(@RequestBody CommentUpdateDto dto,
+	public ResponseEntity<CommentDto> updateComment(@RequestBody CommentUpdateDto dto,
 			@PathVariable Long commentId,
 			@AuthenticationPrincipal CustomUserDetails authUser){
 				
-		try {
-		
-			
-			
+
 			return ResponseEntity.ok().body(commentService.updateComment(commentId,dto,authUser.getUserId()));
 		
-		} catch (IllegalArgumentException e) {
-	        return ResponseEntity.badRequest().body(e.getMessage());
-	    } catch (SecurityException e) {
-	        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
-	    } catch (NoSuchElementException e) {
-	        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
-	    } catch (IllegalStateException e) {
-	        return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
-	    } catch (Exception e) {
-	        e.printStackTrace();
-	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-	                .body("Error en el servidor");
-	    }
+
 		
 	}
 	

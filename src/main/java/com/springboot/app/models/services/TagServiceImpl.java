@@ -1,6 +1,7 @@
 package com.springboot.app.models.services;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
@@ -30,15 +31,12 @@ public class TagServiceImpl implements ITagService {
 	}
 
 	@Override
-	public Optional<TagDto> getTagActiveByIdOrName(Integer id,String nameTag) {
+	public TagDto getTagActiveByIdOrName(Integer id,String nameTag) {
 		
-		Optional<Tag> tag=tagDao.getTagActiveByIdOrName(id,nameTag.toUpperCase());
+		Tag tag=tagDao.getTagActiveByIdOrName(id,nameTag.toUpperCase()).orElseThrow(() -> new NoSuchElementException("Tag no encontrado"));
 		
-		if (tag.isEmpty()) {
-			return Optional.empty();
-		}
-		
-		return Optional.of(new TagDto(tag.get()));
+
+		return new TagDto(tag);
 	}
 
 	@Override
@@ -57,7 +55,7 @@ public class TagServiceImpl implements ITagService {
 				new Tag() : 
 					tagDao.findById(tagDto.getId())
 					.orElseThrow(
-							() -> new IllegalArgumentException("Tag no encontrado"));
+							() -> new NoSuchElementException("Tag no encontrado"));
 		
 		tag.setName(tagDto.getName());
 		tag.setColor(tagDto.getColor());

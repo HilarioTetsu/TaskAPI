@@ -8,8 +8,6 @@ import com.springboot.app.models.dtos.CommentDto;
 import com.springboot.app.models.dtos.CommentUpdateDto;
 import com.springboot.app.models.entities.Media;
 
-import jakarta.validation.Valid;
-
 
 
 

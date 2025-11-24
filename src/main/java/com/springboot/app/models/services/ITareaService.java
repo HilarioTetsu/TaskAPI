@@ -6,9 +6,9 @@ import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 
+import com.springboot.app.models.dtos.PrioridadTareaDto;
 import com.springboot.app.models.dtos.TagDto;
 import com.springboot.app.models.dtos.TareaDto;
-import com.springboot.app.models.entities.Tag;
 import com.springboot.app.models.entities.Tarea;
 
 
@@ -24,7 +24,7 @@ public interface ITareaService {
 	
 	boolean isAsignedToThisTask(String tareaId,Long userId);
 	
-	List<TagDto> asignarTag(Tarea tarea,Tag tag);
+	List<TagDto> asignarTag(String idTarea,Integer idTag, Long authUserId);
 
 	void asignarTarea(List<Long> userIds, String tareaId, Long userId);
 
@@ -33,5 +33,7 @@ public interface ITareaService {
 	void deleteTarea(String tareaId, Long authUserId);
 
 	Optional<Tarea> findByIdGuid(String tareaId);
+
+	List<PrioridadTareaDto> findAllPrioridadesTarea();
 	
 }
