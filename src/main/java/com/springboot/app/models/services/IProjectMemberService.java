@@ -37,4 +37,8 @@ public interface IProjectMemberService {
 	int getCountOwners(String projectId);
 
 	List<ProjectMember> saveAll(List<ProjectMember> members);
+
+	void deleteProjectMember(Long authUserId, String projectId, Long userId);
+
+	boolean isMemberActive(Long usuarioId, String projectId);
 }

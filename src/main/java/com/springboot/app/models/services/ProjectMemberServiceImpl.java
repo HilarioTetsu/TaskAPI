@@ -3,14 +3,19 @@ package com.springboot.app.models.services;
 import java.util.Arrays;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.stream.Collectors;
 
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.springboot.app.models.dao.IProjectDao;
 import com.springboot.app.models.dao.IProjectMemberDao;
+import com.springboot.app.models.dao.ITareaDao;
 import com.springboot.app.models.dtos.ProjectMemberDto;
 import com.springboot.app.models.entities.ProjectMember;
+import com.springboot.app.models.entities.Tarea;
+import com.springboot.app.models.entities.Usuario;
 import com.springboot.app.utils.Constants;
 import com.springboot.app.utils.CustomUserDetails;
 import com.springboot.app.utils.ProjectRole;
@@ -26,17 +31,19 @@ public class ProjectMemberServiceImpl implements IProjectMemberService {
 	
 	private final IUsuarioService usuarioService;
 
-	
+	private final ITareaDao tareaDao;
+
 
 
 
 
 	public ProjectMemberServiceImpl(IProjectMemberDao projectMemberDao, IProjectDao projectDao,
-			IUsuarioService usuarioService) {
+			IUsuarioService usuarioService, ITareaDao tareaDao) {
 		super();
 		this.projectMemberDao = projectMemberDao;
 		this.projectDao = projectDao;
 		this.usuarioService = usuarioService;
+		this.tareaDao = tareaDao;
 	}
 
 	@Override
@@ -52,6 +59,15 @@ public class ProjectMemberServiceImpl implements IProjectMemberService {
 		
 		return projectMemberDao.existsByUsuarioIdAndProjectIdGuid(usuarioId, projectId);
 	}
+	
+	
+	@Override
+	@Transactional(readOnly = true)
+	public boolean isMemberActive(Long usuarioId, String projectId) {
+		
+		return projectMemberDao.existsByUsuarioIdAndProjectIdGuidAndStatusIs(usuarioId, projectId,Constants.STATUS_ACTIVE);
+	}
+	
 
 	@Override
 	@Transactional
@@ -214,6 +230,51 @@ public class ProjectMemberServiceImpl implements IProjectMemberService {
 	public List<ProjectMember> saveAll(List<ProjectMember> members) {
 		
 		return projectMemberDao.saveAll(members);
+	}
+
+	@Override
+	@Transactional
+	public void deleteProjectMember(Long authUserId, String projectId, Long userId) {
+		
+		if (!isOwner(authUserId, projectId)) {
+			throw new AccessDeniedException("No tiene los permisos necesario en este proyecto");
+		}
+		
+		if (!isMemberActive(userId, projectId)) {
+			throw new IllegalStateException("El usuario a eliminar no es miembro del proyecto");
+		}
+		
+		
+		int countOwners = getCountOwners(projectId);
+		
+		
+		if (countOwners==1 && userId==authUserId) {
+					
+			throw new IllegalStateException("No se permite la accion al ser el unico owner del proyecto");
+		}
+		
+		 ProjectMember member= findByUsuarioIdAndProjectIdGuid(userId, projectId);
+		
+		 List<Tarea> taskAssigned =member.getProject().getListTarea().stream().filter(t -> t.getUsuarios().stream().anyMatch(u -> u.getId()==userId)).collect(Collectors.toList()) ;
+		 
+		 for (Tarea tarea : taskAssigned) {
+			
+			 List<Usuario> asigned = tarea.getUsuarios();
+			 
+			 asigned.removeIf(u -> u.getId()==userId);
+			 
+			 tarea.setUsuarios(asigned);
+			 
+		}
+		 
+		 
+		 tareaDao.saveAll(taskAssigned);
+		 
+		 member.setStatus(Constants.STATUS_INACTIVE);
+		 
+		 save(member);
+		 
+		 
 	}
 
 	

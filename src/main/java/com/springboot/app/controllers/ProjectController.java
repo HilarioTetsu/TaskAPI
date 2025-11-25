@@ -123,6 +123,18 @@ public class ProjectController {
 				HttpStatus.CREATED);
 
 	}
+	
+	@DeleteMapping("/{projectId}/members/{userId}")
+	public ResponseEntity<Void> deleteProjectMember(@AuthenticationPrincipal CustomUserDetails authUser,
+			@PathVariable(required = true) String projectId,
+			@PathVariable(required = true) Long userId) {
+
+				
+		projectMemberService.deleteProjectMember(authUser.getUserId(),projectId,userId);
+
+
+		return ResponseEntity.noContent().build();
+	}
 
 	@GetMapping("/{projectId}/members")
 	public ResponseEntity<List<ProjectMemberDto>> getProjectMembers(@AuthenticationPrincipal CustomUserDetails authUser,
