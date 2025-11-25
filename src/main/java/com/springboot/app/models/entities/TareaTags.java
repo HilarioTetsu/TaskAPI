@@ -14,6 +14,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -22,8 +23,10 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Data
-@Table(name = "tarea_tags")
+@Table(name = "tarea_tags",
+uniqueConstraints = @UniqueConstraint(columnNames = {"id_tarea", "id_tag"}))
 @NoArgsConstructor
+
 public class TareaTags {
 	
 	

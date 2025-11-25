@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -75,18 +76,12 @@ public class TareaServiceImpl implements ITareaService {
 
 	@Override
 	@Transactional(readOnly = true)
-	public Optional<TareaDto> findByIdGuid(String id,Long userId) {
+	public TareaDto findByIdGuidAndUserId(String id,Long userId) {
 	
-		Optional<Tarea> tarea=tareaDao.findById(id,userId);
-		
-		if (tarea.isEmpty()) {
-		
-			return Optional.empty();
-		}
+		Tarea tarea=tareaDao.findById(id,userId).orElseThrow(() -> new NoSuchElementException("Tarea no encontrada"));
 				
 		
-		
-		return Optional.of(new TareaDto(tarea.get()));
+		return (new TareaDto(tarea));
 	}
 
 
@@ -184,12 +179,27 @@ public class TareaServiceImpl implements ITareaService {
 
 
 
-	@Override
-	@Transactional(readOnly = true)
+	@Override	
 	public List<TagDto> asignarTag(String tareaId,Integer tagId,Long authUserId) {
 		
-		Tarea tarea = findTareaByIdGuid(tareaId,authUserId).orElseThrow(() -> new NoSuchElementException("Tarea no encontrada"));
+		Tarea tarea = findByIdGuid(tareaId).orElseThrow(() -> new NoSuchElementException("Tarea no encontrada"));
 
+		boolean isOwnerTask=tarea.getOwner().getId()==authUserId ;
+		
+		boolean hasProject=tarea.getProject()!=null;
+		
+		boolean isOwnerProject=hasProject ? projectMemberService.isOwner(authUserId, tarea.getProject().getIdGuid()) : false;
+		
+		
+		if (!hasProject && !isOwnerTask) {
+			throw new AccessDeniedException("No tienes los permisos para realizar esta accion");
+		}
+				
+		if (!isOwnerTask && !isOwnerProject) {
+			throw new AccessDeniedException("No tienes los permisos para realizar esta accion");
+		}
+		
+						
 
 		Tag tag = tagService.getTagActiveById(tagId).orElseThrow(() -> new NoSuchElementException("Tag no encontrado"));
 
@@ -216,15 +226,9 @@ public class TareaServiceImpl implements ITareaService {
 
 	@Override
 	@Transactional(readOnly = true)
-	public Optional<Tarea> findTareaByIdGuid(String id,Long userId) {
+	public Tarea findTareaByIdGuidAndUserId(String id,Long userId) {
 		
-		Optional<Tarea> tarea=tareaDao.findById(id,userId);
-		
-		if (tarea.isEmpty()) {
-		
-			return Optional.empty();
-		}
-				
+		Tarea tarea=tareaDao.findById(id,userId).orElseThrow(() -> new NoSuchElementException("Tarea no encontrada"));			
 		
 		return tarea;
 	}
@@ -253,12 +257,12 @@ public class TareaServiceImpl implements ITareaService {
 			
 			tarea.setUsuarios(usuarios);
 			
-			tareaDao.save(tarea);
+			save(tarea);
 			
 			return;
 			
 			
-			//throw new IllegalStateException("La tarea no se encuentra ligada a ningun proyecto");
+			
 		}
 		
 		if (!projectMemberService.isOwner(userAuthId, tarea.getProject().getIdGuid())) {
@@ -279,7 +283,7 @@ public class TareaServiceImpl implements ITareaService {
 		
 		tarea.setUsuarios(usuarios);
 		
-		tareaDao.save(tarea);
+		save(tarea);
 		
 		
 	}
@@ -331,7 +335,7 @@ public class TareaServiceImpl implements ITareaService {
 		tarea.setStatus(Constants.STATUS_INACTIVE);
 		tarea.setUsuarios(null);
 		
-		tareaDao.save(tarea);
+		save(tarea);
 		
 		
 	}
@@ -362,6 +366,50 @@ public class TareaServiceImpl implements ITareaService {
 	}
 
 
+
+	@Override
+	@Transactional
+	public void quitarTag(String idTarea, Integer idTag, Long authUserId) {
+		
+		Tarea tarea= tareaDao.findById(idTarea).orElseThrow(() -> new NoSuchElementException("Tarea no encontrada"));
+				
+		
+		if (tarea.getOwner().getId()!=authUserId && !projectMemberService.isOwner(authUserId, tarea.getProject().getIdGuid())) {
+			throw new AccessDeniedException("No tienes los permisos para realizar esta accion");
+		}
+		
+		List<TareaTags> tareaTags=tarea.getTareaTagsList();
+		
+		if (tareaTags==null || tareaTags.size()==0) {
+			return;
+		}
+		
+		int tareaTagId=0;
+		
+		for (TareaTags item : tareaTags) {
+			
+			if (item.getTag().getId()==idTag && item.getTarea().getIdGuid().equals(idTarea)) {
+				
+				tareaTagsDao.delete(item);
+				
+				break;
+			}
+					
+		}
+		
+		
+		
+	}
+
+
+	@Override
+	@Transactional
+	public TareaDto save(Tarea tarea) {
+		
+		return new TareaDto(tareaDao.save(tarea));
+	}
+
+	
 
 
 

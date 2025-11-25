@@ -14,9 +14,9 @@ import com.springboot.app.models.entities.Tarea;
 
 public interface ITareaService {
 
-	Optional<TareaDto> findByIdGuid(String id, Long userId);
+	TareaDto findByIdGuidAndUserId(String id, Long userId);
 	
-	Optional<Tarea> findTareaByIdGuid(String id, Long userId);
+	Tarea findTareaByIdGuidAndUserId(String id, Long userId);
 	
 	Page<TareaDto> getAllActives(int pagina,int tamanio, List<Short> tareaStatusIds, List<Short> prioridadIds, LocalDate fechaLimiteDesde, LocalDate fechaLimiteHasta, String busquedaDesc, String busquedaTitulo, String sorts, Long ownerId);
 	
@@ -35,5 +35,11 @@ public interface ITareaService {
 	Optional<Tarea> findByIdGuid(String tareaId);
 
 	List<PrioridadTareaDto> findAllPrioridadesTarea();
+
+	void quitarTag(String idTarea, Integer idTag, Long userId);
+	
+	TareaDto save(Tarea tarea);
+	
+	
 	
 }

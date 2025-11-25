@@ -1,6 +1,8 @@
 package com.springboot.app.models.dtos;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import org.hibernate.validator.constraints.Length;
 
@@ -12,6 +14,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Null;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 @Data
 @NoArgsConstructor
@@ -28,6 +31,10 @@ public class TareaDto {
 		this.fechaLimite=tarea.getFechaLimite();
 		this.status=tarea.getStatus();
 		this.project_id=tarea.getProject()!=null ? tarea.getProject().getIdGuid() : null;
+		this.listTag=tarea.getTareaTagsList()!=null&&tarea.getTareaTagsList().size()>0 
+				? tarea.getTareaTagsList().stream()
+						.map(tagTarea -> new TagDto(tagTarea.getTag()))
+							.collect(Collectors.toList()) : null;
 	}
 
 	
@@ -48,6 +55,8 @@ public class TareaDto {
 	private Short id_prioridad;
 	
 	private String project_id;
+	
+	private List<TagDto> listTag;
 
 	@FutureOrPresent
 	private LocalDateTime fechaLimite;

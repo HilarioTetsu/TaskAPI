@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.springboot.app.models.dtos.TagDto;
 import com.springboot.app.models.dtos.TareaDto;
 import com.springboot.app.models.services.ITareaService;
 import com.springboot.app.utils.CustomUserDetails;
@@ -56,8 +57,7 @@ public class TareaController {
 	public ResponseEntity<TareaDto> getByIdTask(@PathVariable(name = "id", required = true) String idTask,
 			@AuthenticationPrincipal CustomUserDetails authUser) {
 
-		return ResponseEntity.ok().body(tareaService.findByIdGuid(idTask, authUser.getUserId())
-				.orElseThrow(() -> new NoSuchElementException("Tarea no encontrada")));
+		return ResponseEntity.ok().body(tareaService.findByIdGuidAndUserId(idTask, authUser.getUserId()));
 
 	}
 	
@@ -85,13 +85,29 @@ public class TareaController {
 	}
 
 	@PostMapping("/{idTarea}/tags/{idTag}")
-	public ResponseEntity<?> asignarTag(@PathVariable(required = true) String idTarea,
+	public ResponseEntity<Void> asignarTag(@PathVariable(required = true) String idTarea,
 			@PathVariable(required = true) Integer idTag,
 			@AuthenticationPrincipal CustomUserDetails authUser) {
 
-		return ResponseEntity.ok().body(tareaService.asignarTag(idTarea, idTag, authUser.getUserId()));
+		
+		tareaService.asignarTag(idTarea, idTag, authUser.getUserId());
+		
+		return ResponseEntity.noContent().build();		
 
 	}
+	
+	@DeleteMapping("/{idTarea}/tags/{idTag}")
+	public ResponseEntity<?> removerTag(@PathVariable(required = true) String idTarea,
+			@PathVariable(required = true) Integer idTag,
+			@AuthenticationPrincipal CustomUserDetails authUser) {
+
+		
+		tareaService.quitarTag(idTarea, idTag, authUser.getUserId());
+		
+		return ResponseEntity.noContent().build();	
+
+	}
+
 
 	@PostMapping
 	public ResponseEntity<TareaDto> crearTarea(@Valid @RequestBody TareaDto tareaDto,
