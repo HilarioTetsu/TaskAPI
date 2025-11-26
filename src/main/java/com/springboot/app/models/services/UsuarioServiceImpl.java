@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import com.springboot.app.models.dao.IRolDao;
 import com.springboot.app.models.dao.IUsuarioDao;
+import com.springboot.app.models.dtos.UsuarioAuthInfoDto;
 import com.springboot.app.models.dtos.UsuarioDto;
 import com.springboot.app.models.entities.Rol;
 import com.springboot.app.models.entities.Usuario;
@@ -95,9 +96,9 @@ public class UsuarioServiceImpl implements IUsuarioService {
 
 
 	@Override
-	public Optional<Usuario> findByUserId(Long userId) {
+	public Usuario findByUserId(Long userId) {
 		
-		return usuarioDao.findByIdAndStatus(userId,Constants.STATUS_ACTIVE);
+		return usuarioDao.findByIdAndStatus(userId,Constants.STATUS_ACTIVE).orElseThrow(() -> new NoSuchElementException("Usuario no encontrado"));
 	}
 
 
@@ -106,6 +107,14 @@ public class UsuarioServiceImpl implements IUsuarioService {
 	public List<Usuario> findAllByIds(List<Long> ids) {
 		
 		return usuarioDao.findAllById(ids).stream().filter(user -> user.getStatus()==Constants.STATUS_ACTIVE).collect(Collectors.toList());
+	}
+
+
+
+	@Override
+	public UsuarioAuthInfoDto findUserById(Long userId) {
+		
+		return new UsuarioAuthInfoDto(findByUserId(userId));
 	}
 
 }

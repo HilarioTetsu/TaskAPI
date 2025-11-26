@@ -116,9 +116,7 @@ public class ProjectMemberServiceImpl implements IProjectMemberService {
 				() -> new NoSuchElementException("Projecto no encontrado")
 				));
 		
-		member.setUsuario(usuarioService.findByUserId(dto.getUsuarioId()).orElseThrow(
-				() -> new NoSuchElementException("Usuario no encontrado")
-				));
+		member.setUsuario(usuarioService.findByUserId(dto.getUsuarioId()));
 		member.setRole(dto.getRole());
 		
 		member.setUsuarioCreacion(authUser.getUsername());

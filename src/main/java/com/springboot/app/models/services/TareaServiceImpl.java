@@ -111,7 +111,7 @@ public class TareaServiceImpl implements ITareaService {
 	    		:  tareaDao.findById(dto.getIdGuid(),userId)
                 .orElseThrow(() -> new NoSuchElementException("Tarea no encontrada"));
 	    
-	    Usuario user = usuarioService.findByUserId(userId).orElseThrow(() -> new NoSuchElementException("Informacion no encontrada"));
+	    Usuario user = usuarioService.findByUserId(userId);
 	    
 	    Project project = projectService.findByProjectId(dto.getProject_id()).orElse(null);
 	    
@@ -302,7 +302,7 @@ public class TareaServiceImpl implements ITareaService {
 			throw new SecurityException("No tiene los permisos necesarios en este proyecto");
 		}
 		
-		Usuario user = usuarioService.findByUserId(authUserId).get();
+		Usuario user = usuarioService.findByUserId(authUserId);
 		
 		
 		return user.getTareasAsignadas().stream().filter(t -> t.getProject().getIdGuid().equals(projectId)).map(t -> new TareaDto(t)).toList();

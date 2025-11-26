@@ -54,8 +54,7 @@ public class CommentServiceImpl implements ICommentService {
 			throw new SecurityException("No puedes comentar en esta tarea");
 		}
 
-		Usuario autor = usuarioService.findByUserId(authUserId)
-				.orElseThrow(() -> new NoSuchElementException("Usuario no encontrado"));
+		Usuario autor = usuarioService.findByUserId(authUserId);
 
 		List<Usuario> mentions = dto.getMentionsUserIds() != null && dto.getMentionsUserIds().size() > 0
 				? usuarioService.findAllByIds(dto.getMentionsUserIds())
@@ -83,8 +82,7 @@ public class CommentServiceImpl implements ICommentService {
 			throw new SecurityException("No puedes comentar en esta tarea");
 		}
 
-		Usuario autor = usuarioService.findByUserId(authUserId)
-				.orElseThrow(() -> new NoSuchElementException("Usuario no encontrado"));
+		Usuario autor = usuarioService.findByUserId(authUserId);
 
 		Tarea tarea = tareaService.findByIdGuid(dto.getTareaId())
 				.orElseThrow(() -> new NoSuchElementException("Tarea no encontrado"));
