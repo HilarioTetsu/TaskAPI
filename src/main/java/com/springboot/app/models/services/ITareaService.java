@@ -40,6 +40,16 @@ public interface ITareaService {
 	
 	TareaDto save(Tarea tarea);
 	
+	List<Object[]> countTareasByPrioridad(Long userId);
+	
+	List<Object[]> countTareasByTareaStatus(Long userId);
+	
+	int getTareasHoyCountByUserId(Long userId);
+	
+	int getTareasVencidasCountByUserId(Long userId);
+	
+	int getTareasPendientesCountByUserId(Long userId);
+	
 	
 	
 }

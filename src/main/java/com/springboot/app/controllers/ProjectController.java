@@ -15,9 +15,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.springboot.app.models.dtos.DashboardDto;
 import com.springboot.app.models.dtos.ProjectDto;
 import com.springboot.app.models.dtos.ProjectMemberDto;
 import com.springboot.app.models.dtos.TareaDto;
+import com.springboot.app.models.services.IDashboardService;
 import com.springboot.app.models.services.IProjectMemberService;
 import com.springboot.app.models.services.IProjectService;
 import com.springboot.app.models.services.ITareaService;
@@ -37,14 +39,17 @@ public class ProjectController {
 
 	private final IProjectMemberService projectMemberService;
 
-	
+	private final IDashboardService dashboardService;
+
+
 
 	public ProjectController(IProjectService projectService, ITareaService tareaService,
-			IProjectMemberService projectMemberService) {
+			IProjectMemberService projectMemberService, IDashboardService dashboardService) {
 		super();
 		this.projectService = projectService;
 		this.tareaService = tareaService;
-		this.projectMemberService = projectMemberService;		
+		this.projectMemberService = projectMemberService;
+		this.dashboardService = dashboardService;
 	}
 
 	@GetMapping("/roles")
@@ -59,6 +64,13 @@ public class ProjectController {
 			@PathVariable String id) {
 
 		return ResponseEntity.ok().body((projectService.findByProjectIdAndUserId(id, authUser.getUserId())));
+
+	}
+	
+	@GetMapping("/summary")
+	public ResponseEntity<DashboardDto> getDashboardInfo(@AuthenticationPrincipal CustomUserDetails authUser) {
+
+		return ResponseEntity.ok().body(dashboardService.getDashboardInfo(authUser.getUserId()));
 
 	}
 

@@ -409,6 +409,46 @@ public class TareaServiceImpl implements ITareaService {
 		return new TareaDto(tareaDao.save(tarea));
 	}
 
+
+
+	@Override
+	public List<Object[]> countTareasByPrioridad(Long userId) {
+	
+		return tareaDao.countTareasByPrioridad(userId);
+	}
+
+
+
+	@Override
+	public List<Object[]> countTareasByTareaStatus(Long userId) {
+		
+		return tareaDao.countTareasByTareaStatus(userId);
+	}
+
+
+
+	@Override
+	public int getTareasHoyCountByUserId(Long userId) {
+		
+		return tareaDao.getTareasHoyCountByUserId(userId);
+	}
+
+
+
+	@Override
+	public int getTareasVencidasCountByUserId(Long userId) {
+		
+		return tareaDao.getTareasVencidasCountByUserId(userId);
+	}
+
+
+
+	@Override
+	public int getTareasPendientesCountByUserId(Long userId) {
+		
+		return tareaDao.getTareasPendientesCountByUserId(userId);
+	}
+
 	
 
 

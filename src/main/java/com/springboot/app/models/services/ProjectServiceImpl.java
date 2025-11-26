@@ -185,6 +185,18 @@ public class ProjectServiceImpl implements IProjectService {
 		
 	}
 
+	@Override
+	public int getProjectCountRoleOwner(Long userId) {
+		
+		return projectDao.getProjectCountRoleOwner(userId);
+	}
+
+	@Override
+	public int getProjectCountActive(Long userId) {
+		
+		return projectDao.getProjectCountActive(userId);
+	}
+
 
 
 

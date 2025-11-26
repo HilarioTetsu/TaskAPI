@@ -23,6 +23,9 @@ public interface IProjectService {
 
 	void deleteTarea(String projectId, Long userId);
 
+	int getProjectCountRoleOwner(Long userId);
+	
+	int getProjectCountActive(Long userId);
 	
 
 }
