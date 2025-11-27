@@ -18,8 +18,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.springboot.app.models.dtos.PrioridadTareaDto;
 import com.springboot.app.models.dtos.TagDto;
 import com.springboot.app.models.dtos.TareaDto;
+import com.springboot.app.models.dtos.TareaStatusDto;
 import com.springboot.app.models.services.ITareaService;
 import com.springboot.app.utils.CustomUserDetails;
 
@@ -62,16 +64,16 @@ public class TareaController {
 	}
 	
 	@GetMapping("/prioridades")
-	public ResponseEntity<?> getPrioridadesTarea() {
+	public ResponseEntity<List<PrioridadTareaDto>> getPrioridadesTarea() {
 
 		return ResponseEntity.ok().body(tareaService.findAllPrioridadesTarea());
 
 	}
 	
 	@GetMapping("/tarea-status")
-	public ResponseEntity<?> getTareaStatus() {
+	public ResponseEntity<List<TareaStatusDto>> getTareaStatus() {
 
-		return ResponseEntity.ok().body(tareaService.findAllPrioridadesTarea());
+		return ResponseEntity.ok().body(tareaService.findAllTareaStatus());
 
 	}
 

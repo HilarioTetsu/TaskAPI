@@ -9,7 +9,9 @@ import org.springframework.data.domain.Page;
 import com.springboot.app.models.dtos.PrioridadTareaDto;
 import com.springboot.app.models.dtos.TagDto;
 import com.springboot.app.models.dtos.TareaDto;
+import com.springboot.app.models.dtos.TareaStatusDto;
 import com.springboot.app.models.entities.Tarea;
+import com.springboot.app.models.entities.TareaStatus;
 
 
 public interface ITareaService {
@@ -49,6 +51,8 @@ public interface ITareaService {
 	int getTareasVencidasCountByUserId(Long userId);
 	
 	int getTareasPendientesCountByUserId(Long userId);
+
+	List<TareaStatusDto> findAllTareaStatus();
 	
 	
 	
