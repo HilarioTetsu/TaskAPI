@@ -5,13 +5,18 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import com.springboot.app.models.dao.IRolDao;
 import com.springboot.app.models.dao.IUsuarioDao;
 import com.springboot.app.models.dtos.UsuarioAuthInfoDto;
 import com.springboot.app.models.dtos.UsuarioDto;
+import com.springboot.app.models.dtos.UsuarioUpdateDto;
 import com.springboot.app.models.entities.Rol;
 import com.springboot.app.models.entities.Usuario;
 import com.springboot.app.utils.Constants;
@@ -27,26 +32,29 @@ public class UsuarioServiceImpl implements IUsuarioService {
 	
 	private final IRolDao rolDao;
 	
+	private final IProjectMemberService projectMemberService;
 
+	
+	
+	
 
-	public UsuarioServiceImpl(IUsuarioDao usuarioDao, PasswordEncoder encoder, IRolDao rolDao) {		
+	public UsuarioServiceImpl(IUsuarioDao usuarioDao, PasswordEncoder encoder, IRolDao rolDao,
+			IProjectMemberService projectMemberService) {
+		super();
 		this.usuarioDao = usuarioDao;
 		this.encoder = encoder;
 		this.rolDao = rolDao;
+		this.projectMemberService = projectMemberService;
 	}
 
-
-
 	@Override
-	public Optional<UsuarioDto> findByEmailOrUsernameAndStatusIs(String email, String username) {
+	public UsuarioDto findByEmailOrUsernameAndStatusIs(String email, String username) {
 		
-		Optional<Usuario> user= usuarioDao.findByEmailOrUsernameAndStatusIs(email.toLowerCase(), username.toLowerCase(), Constants.STATUS_ACTIVE);
+		Usuario user= usuarioDao.findByEmailOrUsernameAndStatusIs(email.toLowerCase(), username.toLowerCase(), Constants.STATUS_ACTIVE)
+				.orElseThrow(() -> new NoSuchElementException("Usuario no encontrado"));
+			
 		
-		if (user.isEmpty()) return Optional.empty();
-		
-		
-		
-		return Optional.of(new UsuarioDto(user.get()));
+		return new UsuarioDto(user);
 	}
 
 	@Override
@@ -56,6 +64,7 @@ public class UsuarioServiceImpl implements IUsuarioService {
 	}
 
 	@Override
+	@Transactional
 	public UsuarioDto save(UsuarioDto user) {
 		
 		if (user.getRoles().equals(null) || user.getRoles().isEmpty() ) {
@@ -115,6 +124,52 @@ public class UsuarioServiceImpl implements IUsuarioService {
 	public UsuarioAuthInfoDto findUserById(Long userId) {
 		
 		return new UsuarioAuthInfoDto(findByUserId(userId));
+	}
+
+
+
+	@Override
+	public List<UsuarioAuthInfoDto> findByUsernameContainingAndProjectId(String term, String projectId, Long userId) {
+		
+		if (!projectMemberService.isMember(userId, projectId)) {
+			throw new AccessDeniedException("No puedes realizar esa accion al no ser parte del proyecto");
+		}
+			
+		
+		return usuarioDao.findByUsernameContaining(term).stream().map(u -> new UsuarioAuthInfoDto(u)).toList();
+	}
+
+	@Override
+	@Transactional
+	public UsuarioAuthInfoDto updateUserInfo(UsuarioUpdateDto dto, Long userId) {
+		
+		Usuario user = findByUserId(userId);
+		
+		if (!encoder.matches(dto.getPassword(), user.getPassword())) {
+			throw new BadCredentialsException("Credenciales incorrectas");
+		}
+		
+		if (usuarioDao.existsByEmailIs(dto.getEmail().toLowerCase())) {
+			throw new IllegalStateException("El nuevo email ya se encuentra en uso");
+		}
+		
+		if (usuarioDao.existsByUsernameIs(dto.getUsername().toLowerCase())) {
+			throw new IllegalStateException("El nuevo username ya se encuentra en uso");
+		}
+				
+		
+		if (StringUtils.hasText(dto.getNewPassword())) {
+			user.setPassword(encoder.encode(dto.getNewPassword()));
+		}
+		
+			user.setUsername(dto.getUsername().toLowerCase());
+		
+			user.setEmail(dto.getEmail().toLowerCase());
+		
+		
+		
+		
+		return new UsuarioAuthInfoDto(usuarioDao.save(user));
 	}
 
 }

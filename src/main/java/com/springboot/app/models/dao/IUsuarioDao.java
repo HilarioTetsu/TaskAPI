@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.NativeQuery;
 import org.springframework.stereotype.Repository;
 
+import com.springboot.app.models.dtos.UsuarioAuthInfoDto;
 import com.springboot.app.models.entities.Usuario;
 
 @Repository
@@ -21,5 +22,12 @@ public interface IUsuarioDao extends JpaRepository<Usuario, Long>{
 	boolean existsByIdAndStatusIs(Long id, Short statusActive);
 
 	Optional<Usuario> findByIdAndStatus(Long userId, Short statusActive);
+
+	List<Usuario> findByUsernameContaining(String term);
+
+
+	boolean existsByEmailIs(String email);
+
+	boolean existsByUsernameIs(String username);
 	
 }

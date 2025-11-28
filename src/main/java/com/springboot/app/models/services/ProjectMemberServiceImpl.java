@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.springboot.app.models.dao.IProjectDao;
 import com.springboot.app.models.dao.IProjectMemberDao;
 import com.springboot.app.models.dao.ITareaDao;
+import com.springboot.app.models.dao.IUsuarioDao;
 import com.springboot.app.models.dtos.ProjectMemberDto;
 import com.springboot.app.models.entities.ProjectMember;
 import com.springboot.app.models.entities.Tarea;
@@ -29,7 +30,7 @@ public class ProjectMemberServiceImpl implements IProjectMemberService {
 	
 	private final IProjectDao projectDao;
 	
-	private final IUsuarioService usuarioService;
+	private final IUsuarioDao usuarioDao;
 
 	private final ITareaDao tareaDao;
 
@@ -37,12 +38,12 @@ public class ProjectMemberServiceImpl implements IProjectMemberService {
 
 
 
-	public ProjectMemberServiceImpl(IProjectMemberDao projectMemberDao, IProjectDao projectDao,
-			IUsuarioService usuarioService, ITareaDao tareaDao) {
+	public ProjectMemberServiceImpl(IProjectMemberDao projectMemberDao, IProjectDao projectDao, IUsuarioDao usuarioDao,
+			ITareaDao tareaDao) {
 		super();
 		this.projectMemberDao = projectMemberDao;
 		this.projectDao = projectDao;
-		this.usuarioService = usuarioService;
+		this.usuarioDao = usuarioDao;
 		this.tareaDao = tareaDao;
 	}
 
@@ -86,7 +87,7 @@ public class ProjectMemberServiceImpl implements IProjectMemberService {
 		throw new SecurityException("No tiene los permisos necesario en este proyecto");
 		}
 
-		if (!usuarioService.existsById(dto.getUsuarioId())) {
+		if (!usuarioDao.existsByIdAndStatusIs(dto.getUsuarioId(),Constants.STATUS_ACTIVE)) {
 			throw new NoSuchElementException("Usuario no encontrado");
 		}
 
@@ -116,7 +117,7 @@ public class ProjectMemberServiceImpl implements IProjectMemberService {
 				() -> new NoSuchElementException("Projecto no encontrado")
 				));
 		
-		member.setUsuario(usuarioService.findByUserId(dto.getUsuarioId()));
+		member.setUsuario(usuarioDao.findById(dto.getUsuarioId()).orElseThrow(() -> new NoSuchElementException("Usuario no encontrado")));
 		member.setRole(dto.getRole());
 		
 		member.setUsuarioCreacion(authUser.getUsername());
@@ -151,7 +152,7 @@ public class ProjectMemberServiceImpl implements IProjectMemberService {
 			throw new SecurityException("No tiene los permisos necesario en este proyecto");
 		}
 
-		if (!usuarioService.existsById(userId)) {
+		if (!usuarioDao.existsByIdAndStatusIs(userId,Constants.STATUS_ACTIVE)) {
 			throw new NoSuchElementException("Usuario no encontrado");
 		}
 
