@@ -21,7 +21,7 @@ public interface IProjectService {
 
 	Optional<Project> findByProjectId(String projectId);
 
-	void deleteTarea(String projectId, Long userId);
+	void deleteProject(String projectId, Long userId);
 
 	int getProjectCountRoleOwner(Long userId);
 	

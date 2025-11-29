@@ -29,6 +29,8 @@ public interface IUsuarioService {
 	List<UsuarioAuthInfoDto> findByUsernameContainingAndProjectId(String term, String projectId, Long userId);
 
 	UsuarioAuthInfoDto updateUserInfo(UsuarioUpdateDto dto, Long userId);
+
+	String findUsernameById(Long userAuthId);
 	
 	
 }

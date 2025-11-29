@@ -172,4 +172,10 @@ public class UsuarioServiceImpl implements IUsuarioService {
 		return new UsuarioAuthInfoDto(usuarioDao.save(user));
 	}
 
+	@Override
+	public String findUsernameById(Long userAuthId) {
+		
+		return usuarioDao.findUsernameById(userAuthId);
+	}
+
 }

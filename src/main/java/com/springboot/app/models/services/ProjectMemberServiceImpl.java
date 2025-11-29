@@ -120,13 +120,19 @@ public class ProjectMemberServiceImpl implements IProjectMemberService {
 		member.setUsuario(usuarioDao.findById(dto.getUsuarioId()).orElseThrow(() -> new NoSuchElementException("Usuario no encontrado")));
 		member.setRole(dto.getRole());
 		
-		member.setUsuarioCreacion(authUser.getUsername());
+		if (isUpdate) {
+			member.setUsuarioModificacion(usuarioDao.findUsernameById(authUser.getUserId()));
+		}else {
+			member.setUsuarioCreacion(usuarioDao.findUsernameById(authUser.getUserId()));
+		}
 		
 		
 		
 		
 		
-		return new ProjectMemberDto(projectMemberDao.save(member));
+		
+		
+		return new ProjectMemberDto(save(member));
 	}
 
 	@Override
@@ -270,6 +276,7 @@ public class ProjectMemberServiceImpl implements IProjectMemberService {
 		 tareaDao.saveAll(taskAssigned);
 		 
 		 member.setStatus(Constants.STATUS_INACTIVE);
+		 member.setUsuarioModificacion(usuarioDao.findUsernameById(authUserId));
 		 
 		 save(member);
 		 

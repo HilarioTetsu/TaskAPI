@@ -168,7 +168,7 @@ public class ProjectController {
 	public ResponseEntity<Void> eliminarProjecto(@PathVariable String projectId,
 			@AuthenticationPrincipal CustomUserDetails authUser) {
 
-		projectService.deleteTarea(projectId, authUser.getUserId());
+		projectService.deleteProject(projectId, authUser.getUserId());
 
 		return ResponseEntity.noContent().build();
 

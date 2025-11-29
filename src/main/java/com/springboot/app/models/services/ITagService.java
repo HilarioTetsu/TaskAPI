@@ -17,8 +17,10 @@ public interface ITagService {
 	
 	TagDto getTagActiveByIdOrName(Integer id,String nameTag);
 	
-	Optional<Tag> getTagActiveById(Integer id);
+	Tag getTagActiveById(Integer id);
 	
-	TagDto save(TagDto tagDto);
+	TagDto save(TagDto tagDto, Long authUser);
+
+	void deleteTag(Integer id, Long userId);
 	
 }

@@ -29,5 +29,7 @@ public interface IUsuarioDao extends JpaRepository<Usuario, Long>{
 	boolean existsByEmailIs(String email);
 
 	boolean existsByUsernameIs(String username);
+
+	String findUsernameById(Long userAuthId);
 	
 }

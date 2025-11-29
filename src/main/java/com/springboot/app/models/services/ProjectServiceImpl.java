@@ -150,7 +150,7 @@ public class ProjectServiceImpl implements IProjectService {
 
 	@Override
 	@Transactional
-	public void deleteTarea(String projectId, Long authUserId) {
+	public void deleteProject(String projectId, Long authUserId) {
 		
 		Project project = findByProjectId(projectId).orElseThrow(() -> new NoSuchElementException("Proyecto no encontrado"));
 		
@@ -160,9 +160,11 @@ public class ProjectServiceImpl implements IProjectService {
 				
 		List<Tarea> tareas=project.getListTarea();
 		
+		String username = usuarioDao.findUsernameById(authUserId);
 		
 		tareas.stream().forEach(item -> {
 			item.setStatus(Constants.STATUS_INACTIVE);
+			item.setUsuarioModificacion(username);
 			item.setUsuarios(null);
 		});
 		

@@ -21,5 +21,7 @@ public interface ITagDao extends JpaRepository<Tag, Integer>{
 	
 	@NativeQuery(value = "SELECT * FROM tags t WHERE (?1 IS NULL OR t.id= ?1) AND (?2 IS NULL OR UPPER(t.name) LIKE ?2) AND t.status = 1; ")
 	Optional<Tag> getTagActiveByIdOrName(Integer id,String nameTag);
+
+	boolean existsByNameEquals(String name);
 	
 }

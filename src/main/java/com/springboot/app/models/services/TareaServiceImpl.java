@@ -167,7 +167,7 @@ public class TareaServiceImpl implements ITareaService {
 			throw new AccessDeniedException("No tienes los permisos para realizar esta accion");
 		}
 
-		Tag tag = tagService.getTagActiveById(tagId).orElseThrow(() -> new NoSuchElementException("Tag no encontrado"));
+		Tag tag = tagService.getTagActiveById(tagId);
 
 		if (tarea.getTareaTagsList().stream().anyMatch(x -> x.getTag().getId().equals(tag.getId()))) {
 			throw new IllegalStateException("Tag ya asociado a la tarea");
@@ -277,8 +277,11 @@ public class TareaServiceImpl implements ITareaService {
 		if (!projectMemberService.canEditTasks(userAuthId, projecto.getIdGuid())) {
 			throw new SecurityException("No tiene los permisos necesarios sobre esta tarea");
 		}
+		
+		String username=usuarioService.findUsernameById(userAuthId);
 
 		tarea.setStatus(Constants.STATUS_INACTIVE);
+		tarea.setUsuarioModificacion(username);
 		tarea.setUsuarios(null);
 
 		save(tarea);

@@ -5,6 +5,8 @@ import java.util.List;
 
 import org.hibernate.validator.constraints.Length;
 
+import com.springboot.app.utils.Constants;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -67,14 +69,12 @@ public class Tag {
 
 	@PrePersist
 	public void prePersist() {
-		this.fechaCreacion = LocalDateTime.now();
-		this.usuarioCreacion = "admin";
-		this.status = 1;
+		this.fechaCreacion = LocalDateTime.now();		
+		this.status = Constants.STATUS_ACTIVE;
 	}
 
 	@PreUpdate
-	public void preUpdate() {
-		this.usuarioModificacion = "admin";
+	public void preUpdate() {		
 		this.fechaModificacion = LocalDateTime.now();
 	}
 }

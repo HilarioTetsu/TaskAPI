@@ -4,6 +4,8 @@ import java.util.List;
 
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -16,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.springboot.app.models.dtos.TagDto;
 import com.springboot.app.models.services.ITagService;
 import com.springboot.app.utils.Constants;
+import com.springboot.app.utils.CustomUserDetails;
 
 import jakarta.validation.Valid;
 
@@ -62,11 +65,12 @@ public class TagController {
 	}
 
 	@PostMapping
-	public ResponseEntity<TagDto> crearTag(@Valid @RequestBody TagDto dto) {
+	public ResponseEntity<TagDto> crearTag(@Valid @RequestBody TagDto dto,
+			@AuthenticationPrincipal CustomUserDetails authUser) {
 
 		
 		
-		return ResponseEntity.ok(tagService.save(dto));
+		return ResponseEntity.ok(tagService.save(dto,authUser.getUserId()));
 		
 
 	}
@@ -74,9 +78,21 @@ public class TagController {
 
 	
 	@PatchMapping
-	public ResponseEntity<TagDto> actualizarTag(@Valid @RequestBody TagDto dto) {
+	public ResponseEntity<TagDto> actualizarTag(@Valid @RequestBody TagDto dto,
+			@AuthenticationPrincipal CustomUserDetails authUser) {
 
-		return ResponseEntity.ok(tagService.save(dto));					
+		return ResponseEntity.ok(tagService.save(dto,authUser.getUserId()));					
+
+
+	}
+	
+	@DeleteMapping("/{id}")
+	public ResponseEntity<Void> deleteTag(@PathVariable Integer id,
+			@AuthenticationPrincipal CustomUserDetails authUser) {
+
+		tagService.deleteTag(id,authUser.getUserId());
+		
+		return ResponseEntity.noContent().build();					
 
 
 	}
