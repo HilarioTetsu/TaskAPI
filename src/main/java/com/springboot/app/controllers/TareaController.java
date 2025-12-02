@@ -1,9 +1,9 @@
 package com.springboot.app.controllers;
 
 import java.time.LocalDate;
-import java.util.List;
-import java.util.NoSuchElementException;
 
+import java.util.List;
+import com.springboot.app.utils.Constants;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,9 +17,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
 import com.springboot.app.models.dtos.PrioridadTareaDto;
-import com.springboot.app.models.dtos.TagDto;
 import com.springboot.app.models.dtos.TareaDto;
 import com.springboot.app.models.dtos.TareaStatusDto;
 import com.springboot.app.models.services.ITareaService;
@@ -28,7 +26,7 @@ import com.springboot.app.utils.CustomUserDetails;
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("/ExampleAPI/v1/tareas")
+@RequestMapping(Constants.URL_BASE_API_V1+"/tareas")
 public class TareaController {
 
 	private final ITareaService tareaService;
