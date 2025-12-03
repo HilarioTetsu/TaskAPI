@@ -143,9 +143,8 @@ public class TagController {
 			@ApiResponse(responseCode = "404", description = "Tag no encontrado.", content = @Content) })
 	@DeleteMapping("/{id}")
 	public ResponseEntity<Void> deleteTag(
-            @Parameter(description = "ID del tag a eliminar", example = "1")
-            @PathVariable Integer id,
-            @AuthenticationPrincipal CustomUserDetails authUser) {
+			@Parameter(description = "ID del tag a eliminar", example = "1") @PathVariable Integer id,
+			@AuthenticationPrincipal CustomUserDetails authUser) {
 
 		tagService.deleteTag(id, authUser.getUserId());
 

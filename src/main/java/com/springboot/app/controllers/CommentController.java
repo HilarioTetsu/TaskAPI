@@ -92,10 +92,26 @@ public class CommentController {
             )
         })
 	@GetMapping
-	public ResponseEntity<Page<CommentDto>> getAllComments(@RequestParam(required = false, defaultValue = "0") Integer pagina,
-			@RequestParam(required = false, defaultValue = "5") Integer tamanio,
-			@RequestParam(required = false, defaultValue = "fecha_creacion,desc;") String sorts,
-			@RequestParam(required = false) String tareaId, @AuthenticationPrincipal CustomUserDetails authUser) {
+	public ResponseEntity<Page<CommentDto>> getAllComments(  @Parameter(
+            description = "Número de página (0-based).",
+            example = "0"
+        )
+        @RequestParam(required = false, defaultValue = "0") Integer pagina,
+        @Parameter(
+            description = "Tamaño de página (cantidad de elementos por página).",
+            example = "5"
+        )
+        @RequestParam(required = false, defaultValue = "5") Integer tamanio,
+        @Parameter(
+            description = "Criterios de ordenamiento. Formato: campo,dirección; Ej: `fecha_creacion,desc;`",
+            example = "fecha_creacion,desc;"
+        )
+        @RequestParam(required = false, defaultValue = "fecha_creacion,desc;") String sorts,
+        @Parameter(
+            description = "Identificador GUID de la tarea. Si se envía, filtra por los comentarios de esa tarea."
+        )
+        @RequestParam(required = false) String tareaId,
+        @AuthenticationPrincipal CustomUserDetails authUser) {
 
 		if (StringUtils.hasText(tareaId)) {
 
