@@ -2,6 +2,7 @@ package com.springboot.app.models.services;
 
 
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.UUID;
@@ -58,6 +59,25 @@ public class ProjectServiceImpl implements IProjectService {
 				.toList();
 	}
 
+	
+    public Map<Short, String> getAllStatuses() {
+        return Map.of(
+            Constants.STATUS_INACTIVE, "INACTIVO",
+            Constants.STATUS_ACTIVE, "ACTIVO"
+        );
+    }
+    
+    
+    public String getStatusByKey(short statusKey) {
+        String status = getAllStatuses().get(statusKey);
+        if (status == null) {
+            throw new NoSuchElementException(
+                String.format("No existe un estatus de proyecto con la clave: %d", statusKey)
+            );
+        }
+        return status;
+    }
+	
 	@Override
 	public ProjectDto save(ProjectDto dto,Long userId) {
 		

@@ -1,7 +1,7 @@
 package com.springboot.app.controllers;
 
 import java.util.List;
-
+import java.util.Map;
 import java.util.NoSuchElementException;
 
 import org.springframework.http.HttpStatus;
@@ -66,6 +66,15 @@ public class ProjectController {
 	public ResponseEntity<ProjectRole[]> getProjectRoles() {
 
 		return new ResponseEntity<ProjectRole[]>(ProjectRole.values(), HttpStatus.OK);
+
+	}
+	
+	
+	@GetMapping("/statuses")
+	public ResponseEntity<Map<Short,String>> getProjectStatuses() {
+
+						
+		return new ResponseEntity<Map<Short,String>>(projectService.getAllStatuses(), HttpStatus.OK);
 
 	}
 

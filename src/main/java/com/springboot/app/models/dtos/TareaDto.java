@@ -38,7 +38,7 @@ public class TareaDto {
 	}
 
 	
-	@Null
+	
 	@Length(max = 36,min = 36)
 	private String idGuid;
 

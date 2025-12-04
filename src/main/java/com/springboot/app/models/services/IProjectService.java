@@ -1,6 +1,7 @@
 package com.springboot.app.models.services;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import com.springboot.app.models.dtos.ProjectDto;
@@ -26,6 +27,10 @@ public interface IProjectService {
 	int getProjectCountRoleOwner(Long userId);
 	
 	int getProjectCountActive(Long userId);
+	
+	public Map<Short, String> getAllStatuses();
+	
+	 public String getStatusByKey(short statusKey);
 	
 
 }

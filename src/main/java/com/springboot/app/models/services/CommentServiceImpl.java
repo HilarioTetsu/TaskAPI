@@ -55,7 +55,7 @@ public class CommentServiceImpl implements ICommentService {
 		Tarea tarea = tareaService.findByIdGuid(dto.getTareaId())
 				.orElseThrow(() -> new NoSuchElementException("Tarea no encontrado"));
 
-		if (!tareaService.isAsignedToThisTask(tarea.getIdGuid(), authUserId) || !projectMemberService.isOwner(authUserId, tarea.getProject().getIdGuid())) {
+		if (!tareaService.isAsignedToThisTask(tarea.getIdGuid(), authUserId) || !projectMemberService.canEditTasks(authUserId, tarea.getProject().getIdGuid())) {
 			throw new SecurityException("No puedes comentar en esta tarea");
 		}
 

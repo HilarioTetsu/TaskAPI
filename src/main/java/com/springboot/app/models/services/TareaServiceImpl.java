@@ -1,13 +1,13 @@
 package com.springboot.app.models.services;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
-
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -15,14 +15,17 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.springboot.app.models.dao.ICommentDao;
 import com.springboot.app.models.dao.IPrioridadTareaDao;
 import com.springboot.app.models.dao.ITareaDao;
 import com.springboot.app.models.dao.ITareaStatusDao;
 import com.springboot.app.models.dao.ITareaTagsDao;
+
 import com.springboot.app.models.dtos.PrioridadTareaDto;
 import com.springboot.app.models.dtos.TagDto;
 import com.springboot.app.models.dtos.TareaDto;
 import com.springboot.app.models.dtos.TareaStatusDto;
+import com.springboot.app.models.entities.Comment;
 import com.springboot.app.models.entities.PrioridadTarea;
 import com.springboot.app.models.entities.Project;
 import com.springboot.app.models.entities.Tag;
@@ -51,10 +54,16 @@ public class TareaServiceImpl implements ITareaService {
 	private final IProjectMemberService projectMemberService;
 
 	private final ITagService tagService;
+	
+	private final ICommentDao commentDao;
+
+
+
+
 
 	public TareaServiceImpl(ITareaDao tareaDao, IPrioridadTareaDao prioridadDao, ITareaStatusDao tareaStatusDao,
 			ITareaTagsDao tareaTagsDao, IUsuarioService usuarioService, IProjectService projectService,
-			IProjectMemberService projectMemberService, ITagService tagService) {
+			IProjectMemberService projectMemberService, ITagService tagService, ICommentDao commentDao) {
 		super();
 		this.tareaDao = tareaDao;
 		this.prioridadDao = prioridadDao;
@@ -64,6 +73,7 @@ public class TareaServiceImpl implements ITareaService {
 		this.projectService = projectService;
 		this.projectMemberService = projectMemberService;
 		this.tagService = tagService;
+		this.commentDao = commentDao;
 	}
 
 	@Override
@@ -78,9 +88,11 @@ public class TareaServiceImpl implements ITareaService {
 
 	@Override
 	@Transactional
-	public TareaDto save(TareaDto dto, Long userId) {
+	public TareaDto save(TareaDto dto, Long userAuthId) {
 
 		boolean isUpdate = false;
+		
+		String cambiosTarea;
 
 		Optional<PrioridadTarea> prioridadTarea = prioridadDao.findById(dto.getId_prioridad());
 
@@ -98,13 +110,52 @@ public class TareaServiceImpl implements ITareaService {
 		}
 
 		Tarea tarea = (dto.getIdGuid() == null) ? new Tarea(UUID.randomUUID().toString())
-				: tareaDao.findById(dto.getIdGuid(), userId)
+				: tareaDao.findById(dto.getIdGuid(), userAuthId)
 						.orElseThrow(() -> new NoSuchElementException("Tarea no encontrada"));
 
-		Usuario user = usuarioService.findByUserId(userId);
+		Usuario user = usuarioService.findByUserId(userAuthId);
 
 		Project project = projectService.findByProjectId(dto.getProject_id()).orElse(null);
+		
+		if (project!=null && !projectMemberService.canEditTasks(userAuthId, project.getIdGuid())) {
+			
+			throw new SecurityException("No tienes permitido crear una tarea en este proyecto");
+		}
 
+		
+		if (isUpdate) {
+								
+			cambiosTarea = generarMensajeCambiosTarea(tarea,dto,user,prioridadTarea.get(),tareaStatus.get(),project);
+						
+			List<Long> mentionsIds = new ArrayList<>();
+			Comment comment = new Comment();
+			
+			comment.setBody(cambiosTarea);			
+			comment.setAutor(user);
+			comment.setTarea(tarea);
+			
+			
+			
+			
+			mentionsIds.addAll(tarea.getUsuarios().stream().map(u -> u.getId()).toList());
+									
+			mentionsIds.add(project.getOwner().getId());
+			
+			mentionsIds.add(tarea.getOwner().getId());
+			
+			
+			mentionsIds.removeIf(u -> u == userAuthId);
+			
+			comment.setMentions(usuarioService.findAllByIds(mentionsIds));
+			
+			commentDao.save(comment);
+			
+			
+			tarea.setUsuarioModificacion(user.getUsername());
+		} else {
+			tarea.setOwner(user);
+		}
+		
 		tarea.setTitulo(dto.getTitulo());
 		tarea.setDescripcion(dto.getDescripcion());
 		tarea.setFechaLimite(dto.getFechaLimite());
@@ -113,19 +164,56 @@ public class TareaServiceImpl implements ITareaService {
 		tarea.setTareaStatus(tareaStatus.get());
 		tarea.setProject(project);
 
-		if (isUpdate) {
-			tarea.setUsuarioModificacion(user.getEmail());
-		} else {
-			tarea.setOwner(user);
-		}
+
 
 		TareaDto saved = new TareaDto(tareaDao.saveAndFlush(tarea));
 
 		if (project == null) {
-			asignarTarea(Arrays.asList(userId), saved.getIdGuid(), userId);
+			asignarTarea(Arrays.asList(userAuthId), saved.getIdGuid(), userAuthId);
 		}
+						
+		
 
 		return saved;
+	}
+
+	private String generarMensajeCambiosTarea(Tarea tarea, TareaDto dto, Usuario user, PrioridadTarea prioridad, TareaStatus tareaStatus, Project project) {
+		
+		StringBuffer buffer = new StringBuffer();
+		
+		String msg="%s ha cambiado a \"%s\" por el usuario %s \n\n";
+		
+		if (!tarea.getTitulo().equals(dto.getTitulo())) {
+			buffer.append(String.format(msg, "Titulo",dto.getTitulo(),user.getUsername()));
+		}
+		
+		
+		if (!tarea.getDescripcion().equals(dto.getDescripcion())) {
+			buffer.append(String.format(msg, "Descripcion",dto.getDescripcion(),user.getUsername()));
+		}
+		
+		if (!tarea.getFechaLimite().equals(dto.getFechaLimite())) {
+			buffer.append(String.format(msg, "Fecha limite",dto.getFechaLimite().toString(),user.getUsername()));
+		}
+		
+		if (!tarea.getStatus().equals(dto.getStatus())) {
+			buffer.append(String.format(msg, "Status",projectService.getStatusByKey(dto.getStatus()),user.getUsername()));
+		}
+		
+		if (!tarea.getPrioridad().getId().equals(dto.getId_prioridad())) {
+			buffer.append(String.format(msg, "Prioridad",prioridad.getPrioridadTipo(),user.getUsername()));
+		}
+		
+		if (!tarea.getTareaStatus().getId().equals(dto.getId_tarea_status())) {
+			buffer.append(String.format(msg, "Status de la tarea",tareaStatus.getStatus(),user.getUsername()));
+		}
+		
+		if (project!=null && !tarea.getProject().getIdGuid().equals(dto.getProject_id())) {
+			buffer.append(String.format(msg, "El proyecto de la tarea",project.getName(),user.getUsername()));
+		}
+		
+		
+		return buffer.toString();
 	}
 
 	@Override
