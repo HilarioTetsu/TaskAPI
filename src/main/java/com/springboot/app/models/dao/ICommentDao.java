@@ -25,4 +25,8 @@ public interface ICommentDao extends JpaRepository<Comment, Long>{
 	@NativeQuery(value="SELECT * FROM comentarios c WHERE c.tarea_id=:tareaId ",countQuery = "SELECT COUNT(*) FROM comentarios c WHERE c.tarea_id=:tareaId ")
 	Page<Comment> findAllByTareaId(Pageable pageable, @Param("tareaId") String tareaId);
 	
+	
+	@NativeQuery(value="SELECT * FROM comentarios c WHERE c.tarea_id=:tareaId and c.status=1")
+	List<Comment> findAllByTareaId( @Param("tareaId") String tareaId);
+	
 }

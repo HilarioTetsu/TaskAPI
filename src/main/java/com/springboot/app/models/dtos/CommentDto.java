@@ -53,6 +53,8 @@ public class CommentDto {
 	
 	private List<String> confirmMediaStorageKeyId;
 	
+	private List<String> confirmMediaStorageKeyUrls;
+	
 	private Short status;
 	
 	private LocalDateTime fechaCreacion;

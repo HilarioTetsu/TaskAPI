@@ -1,12 +1,17 @@
 package com.springboot.app.models.services;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -50,7 +55,7 @@ public class CommentServiceImpl implements ICommentService {
 		Tarea tarea = tareaService.findByIdGuid(dto.getTareaId())
 				.orElseThrow(() -> new NoSuchElementException("Tarea no encontrado"));
 
-		if (!tareaService.isAsignedToThisTask(dto.getTareaId(), authUserId)) {
+		if (!tareaService.isAsignedToThisTask(tarea.getIdGuid(), authUserId) || !projectMemberService.isOwner(authUserId, tarea.getProject().getIdGuid())) {
 			throw new SecurityException("No puedes comentar en esta tarea");
 		}
 
@@ -111,8 +116,27 @@ public class CommentServiceImpl implements ICommentService {
 	public Page<CommentDto> getAll(Integer pagina, Integer tamanio, String sorts, Long userId) {
 
 		Pageable pageable = PageRequest.of(pagina, tamanio, Utils.parseSortParams(sorts));
+		
+			Page<CommentDto> pageDtos = commentDao.findAllByUserId(pageable, userId).map(comm -> {
+			
+			List<Media> medias = comm.getAdjuntos().stream()
+					.filter(media -> media.getStatus().equals(Constants.STATUS_READY))
+						.toList();
+									
+			List<String> urls = mediaService.createPresignedGetUrls(medias.stream().map(m -> m.getStorageKey()).toList());
+			
+			CommentDto dto = new CommentDto(comm);
+			
+			dto.setConfirmMediaStorageKeyUrls(urls);
+			
+			return dto;
+			
+		});
+		
+		
+		
 
-		return commentDao.findAllByUserId(pageable, userId).map(comment -> new CommentDto(comment));
+		return pageDtos;
 	}
 
 	@Override
@@ -134,7 +158,27 @@ public class CommentServiceImpl implements ICommentService {
 
 		Pageable pageable = PageRequest.of(pagina, tamanio, Utils.parseSortParams(sorts));
 
-		return commentDao.findAllByTareaId(pageable, tareaId).map(comment -> new CommentDto(comment));
+
+		Page<CommentDto> pageDtos = commentDao.findAllByTareaId(pageable, tareaId).map(comm -> {
+			
+			List<Media> medias = comm.getAdjuntos().stream()
+					.filter(media -> media.getStatus().equals(Constants.STATUS_READY))
+						.toList();
+									
+			List<String> urls = mediaService.createPresignedGetUrls(medias.stream().map(m -> m.getStorageKey()).toList());
+			
+			CommentDto dto = new CommentDto(comm);
+			
+			dto.setConfirmMediaStorageKeyUrls(urls);
+			
+			return dto;
+			
+		});
+		
+		
+		
+
+		return pageDtos;
 	}
 
 	@Override
@@ -146,7 +190,7 @@ public class CommentServiceImpl implements ICommentService {
 
 		if (comment.getAutor().getId() != userId
 				&& !projectMemberService.isOwner(userId, comment.getTarea().getProject().getIdGuid())) {
-			throw new SecurityException("No tienes los permisos necesarios para este commentario");
+			throw new SecurityException("No tienes los permisos necesarios para este comentario");
 		}
 
 		comment.setStatus(Constants.STATUS_INACTIVE);
@@ -190,6 +234,26 @@ public class CommentServiceImpl implements ICommentService {
 		commentDao.save(comment);
 
 		return new CommentDto(commentDao.save(comment));
+	}
+	
+	
+	
+	public Page<CommentDto> convertirListaEnPage(List<CommentDto> commts, Pageable pageable) {
+	    if (commts == null) {
+	        return new PageImpl<>(Collections.emptyList(), pageable, 0);
+	    }
+
+	    int start = (int) pageable.getOffset();
+	    int end = Math.min((start + pageable.getPageSize()), commts.size());
+
+	    // Validación crítica: Si el inicio supera el tamaño de la lista, retorna lista vacía
+	    if (start > commts.size()) {
+	        return new PageImpl<>(new ArrayList<>(), pageable, commts.size());
+	    }
+
+	    List<CommentDto> subLista = commts.subList(start, end);
+
+	    return new PageImpl<>(subLista, pageable, commts.size());
 	}
 
 }

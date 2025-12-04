@@ -30,6 +30,8 @@ public interface IUsuarioDao extends JpaRepository<Usuario, Long>{
 
 	boolean existsByUsernameIs(String username);
 
-	String findUsernameById(Long userAuthId);
+	
+	@NativeQuery("select u.username from usuarios u where u.id=?1")
+	String findUsernameById(Long Id);
 	
 }

@@ -17,4 +17,7 @@ public interface IMediaService {
 
 	List<Media> saveAll(List<Media> mediaInactive);
 	
+	
+	List<String> createPresignedGetUrls(List<String> storageKeys);
+	
 }

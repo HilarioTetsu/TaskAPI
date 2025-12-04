@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,7 +23,6 @@ public class MediaServiceImpl implements IMediaService {
 	
 	private final IMediaDao mediaDao;
 	private final MediaStorageService storageService;
-	
 	
 
 
@@ -114,6 +114,14 @@ public class MediaServiceImpl implements IMediaService {
 	public List<Media> saveAll(List<Media> mediaInactive) {
 		
 		return mediaDao.saveAll(mediaInactive);
+	}
+
+
+
+	@Override
+	public List<String> createPresignedGetUrls(List<String> storageKeys) {
+		
+		return storageService.createPresignedGetUrls(storageKeys);
 	}
 
 }
