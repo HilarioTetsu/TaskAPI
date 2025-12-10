@@ -60,11 +60,25 @@ public class UsuarioController {
 				.ok(usuarioService.findByUsernameContainingAndProjectId(term, projectId, authUser.getUserId()));
 
 	}
-	
+
+	@Operation(summary = "Buscar usuarios por username o email dentro de un proyecto", description = """
+			Busca usuarios cuyo **username** o **email** contenga el término indicado,
+			limitado al contexto de un proyecto.
+
+			Uso típico:
+			- Autocompletado de campos de asignación de tareas o miembros de proyecto.
+
+			Reglas (en la capa de servicio):
+			- El usuario autenticado debe ser miembro del proyecto (`projectId`).
+			- Solo se devuelven usuarios activos.
+			""")
+	@ApiResponses({
+			@ApiResponse(responseCode = "200", description = "Lista de usuarios encontrada.", content = @Content(mediaType = "application/json", array = @ArraySchema(schema = @Schema(implementation = UsuarioAuthInfoDto.class)))),
+			@ApiResponse(responseCode = "403", description = "El usuario autenticado no es miembro del proyecto o no tiene permisos.", content = @Content) })
 	@GetMapping("/search/by-username-or-email")
 	public ResponseEntity<List<UsuarioAuthInfoDto>> getUsersContainingUsernameOrEmail(
-			@RequestParam(required = true) String term,
-			@RequestParam(required = true) String projectId,
+			@Parameter(description = "Texto parcial para buscar en username o email.", example = "team") @RequestParam(required = true) String term,
+			@Parameter(description = "GUID del proyecto donde se está buscando.", example = "b3b6a1c5-9d8e-4f2c-9013-0b40e9f5f111") @RequestParam(required = true) String projectId,
 			@AuthenticationPrincipal CustomUserDetails authUser) {
 
 		return ResponseEntity

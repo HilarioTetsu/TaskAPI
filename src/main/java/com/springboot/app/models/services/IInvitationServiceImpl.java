@@ -1,21 +1,30 @@
 package com.springboot.app.models.services;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.springboot.app.models.dao.IInvitationDao;
 import com.springboot.app.models.dtos.InvitationDto;
+import com.springboot.app.models.dtos.InvitationViewDto;
 import com.springboot.app.models.dtos.ProjectMemberDto;
 import com.springboot.app.models.entities.Invitation;
 import com.springboot.app.models.entities.Project;
 import com.springboot.app.models.entities.Usuario;
 import com.springboot.app.utils.Constants;
 import com.springboot.app.utils.ProjectRole;
+import com.springboot.app.utils.Utils;
+
+import io.jsonwebtoken.lang.Strings;
 
 @Service
 public class IInvitationServiceImpl implements IInvitationService {
@@ -84,7 +93,14 @@ public class IInvitationServiceImpl implements IInvitationService {
 			throw new SecurityException("No tienes los permisos para aceptar la invitacion");
 		}
 		
+		List<Short> statuses= Arrays.asList(Constants.STATUS_ACCEPTED,Constants.STATUS_REJECTED,Constants.STATUS_INACTIVE);
+		
 		Invitation invitation = findById(invitationId);
+		
+		if (statuses.contains(invitation.getStatus())) {
+			throw new IllegalStateException("Esta invitacion ya ha sido confirmada o eliminada");
+		}
+		
 		
 		if (status.equals(Constants.STATUS_REJECTED)) {
 			
@@ -127,6 +143,30 @@ public class IInvitationServiceImpl implements IInvitationService {
 					Constants.STATUS_PENDING,"PENDIENTE",
 					Constants.STATUS_ACCEPTED,"ACEPTADA",
 					Constants.STATUS_REJECTED,"RECHAZADA");
+	}
+
+	@Override
+	public Page<InvitationViewDto> getAllInvitations(Long userAuthId, String status,Integer pagina, Integer tamanio,String sorts) {
+		
+		Short statusCode=null;
+		
+		if (Strings.hasText(status)) {
+			 statusCode = getInvitationStatuses().entrySet()
+						.stream()
+						.filter(s -> s.getValue().equals(status))
+						.map(e -> e.getKey()).findFirst()
+						.orElseThrow(() -> new IllegalArgumentException("Status no valido"));
+		}
+		
+
+		
+		
+		Pageable pageable=PageRequest.of(pagina, tamanio, Utils.parseSortParams(sorts));
+		
+		
+		Page<Invitation> invitations= invitationDao.getAllInvitation(pageable,userAuthId,statusCode);
+		
+		return invitations.map(i -> new InvitationViewDto(i));
 	}
 
 }

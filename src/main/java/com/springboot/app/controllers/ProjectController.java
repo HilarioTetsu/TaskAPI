@@ -68,13 +68,21 @@ public class ProjectController {
 		return new ResponseEntity<ProjectRole[]>(ProjectRole.values(), HttpStatus.OK);
 
 	}
-	
-	
-	@GetMapping("/statuses")
-	public ResponseEntity<Map<Short,String>> getProjectStatuses() {
 
-						
-		return new ResponseEntity<Map<Short,String>>(projectService.getAllStatuses(), HttpStatus.OK);
+	@Operation(summary = "Obtener catálogo de estatus de proyectos", description = """
+			Devuelve un mapa con los estatus posibles de un proyecto.
+
+			Ejemplo típico:
+			- 1 = ACTIVO
+			- 0 = INACTIVO
+			- Otros valores pueden representar estados adicionales de negocio.
+			""")
+	@ApiResponses({
+			@ApiResponse(responseCode = "200", description = "Catálogo de estatus de proyectos devuelto correctamente.", content = @Content(mediaType = "application/json", schema = @Schema(example = "{\"1\":\"ACTIVO\",\"0\":\"INACTIVO\"}"))) })
+	@GetMapping("/statuses")
+	public ResponseEntity<Map<Short, String>> getProjectStatuses() {
+
+		return new ResponseEntity<Map<Short, String>>(projectService.getAllStatuses(), HttpStatus.OK);
 
 	}
 
