@@ -115,7 +115,7 @@ public interface ITareaDao extends JpaRepository<Tarea, String> {
 		ts.status,
 		CAST( SUM(
 	    case 
-	      when tu.usuario_id = 1 and t.status = 1 then 1
+	      when tu.usuario_id = ?1 and t.status = 1 then 1
 	      else 0
 	    end
 	  ) as SIGNED) as tareas_usuario
@@ -139,7 +139,7 @@ public interface ITareaDao extends JpaRepository<Tarea, String> {
 		p.tipo_prioridad prioridad,
 		cast( SUM(
 	    case 
-	      when tu.usuario_id = 1 and t.status = 1 then 1
+	      when tu.usuario_id = ?1 and t.status = 1 then 1
 	      else 0
 	    end
 	  )

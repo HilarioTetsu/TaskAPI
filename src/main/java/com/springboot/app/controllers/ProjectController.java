@@ -150,7 +150,7 @@ public class ProjectController {
 			@AuthenticationPrincipal CustomUserDetails authUser,
 			@Parameter(description = "GUID del proyecto", example = "b3b6a1c5-9d8e-4f2c-9013-0b40e9f5f111") @PathVariable("id") String projectId) {
 
-		return new ResponseEntity<ProjectMemberDto>(projectMemberService.save(projectId, dto, authUser),
+		return new ResponseEntity<ProjectMemberDto>(projectMemberService.save(projectId, dto, authUser.getUserId()),
 				HttpStatus.CREATED);
 
 	}
@@ -214,7 +214,7 @@ public class ProjectController {
 		dto.setUsuarioId(userId);
 		dto.setProjectId(projectId);
 
-		return new ResponseEntity<ProjectMemberDto>(projectMemberService.save(projectId, dto, authUser),
+		return new ResponseEntity<ProjectMemberDto>(projectMemberService.save(projectId, dto, authUser.getUserId()),
 				HttpStatus.CREATED);
 
 	}

@@ -178,4 +178,14 @@ public class UsuarioServiceImpl implements IUsuarioService {
 		return usuarioDao.findUsernameById(userAuthId);
 	}
 
+	@Override
+	public List<UsuarioAuthInfoDto> findByUsernameContainingOrEmailContaining(String term, String projectId, Long authUserId) {
+		
+		if (!projectMemberService.isOwner(authUserId, projectId)) {
+			throw new AccessDeniedException("No puedes realizar esa accion");
+		}
+		
+		return usuarioDao.findByUsernameContainingOrEmailContaining(term,term).stream().filter(u -> u.getStatus().equals(Constants.STATUS_ACTIVE)).map(u -> new UsuarioAuthInfoDto(u)).toList();
+	}
+
 }

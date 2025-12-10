@@ -20,7 +20,7 @@ public interface IProjectMemberService {
 
 	boolean isMember(Long usuarioId, String projectId);
 
-	ProjectMemberDto save(String projectId, @Valid ProjectMemberDto dto, CustomUserDetails authUser);
+	ProjectMemberDto save(String projectId, @Valid ProjectMemberDto dto, Long authUserId);
 
 	ProjectMember save(ProjectMember member);
 

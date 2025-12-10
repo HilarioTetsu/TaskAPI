@@ -1,67 +1,53 @@
 package com.springboot.app.models.entities;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 import org.hibernate.validator.constraints.Length;
 
 import com.springboot.app.utils.Constants;
+import com.springboot.app.utils.ProjectRole;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@Entity
-@Table(name = "project")
 @Data
-@NoArgsConstructor
-public class Project {
+@Entity
+@Table(name = "invitations")
+public class Invitation {
 
-	
-	public Project(String GUID) {
-		
-		this.idGuid=GUID;			
-	}
 	
 	@Id
 	@Column(length = 36)
 	@Length(min = 36,max = 36)
-	private String idGuid;
-	
-	@Column(length = 100,nullable = false)
-	@Length(max = 100)
-	@NotBlank
-	private String name;
-	
-	@Lob
-	@Column(columnDefinition = "TEXT")
-	private String descripcion;
+	private String id;
 	
 	@ManyToOne
-	@JoinColumn(name = "owner_id",nullable = true)
-	private Usuario owner;
+	@JoinColumn(nullable = false,name = "user_owner_id")
+	private Usuario host;
 	
-    @OneToMany(mappedBy = "project")
-    private List<Tarea> listTarea;
-    
-    @OneToMany(mappedBy = "project")
-    private List<ProjectMember> projectMember;
-    
-    @OneToMany(mappedBy = "project")
-    private List<Invitation> invitations;
+	@ManyToOne
+	@JoinColumn(nullable = false,name = "user_guest_id")
+	private Usuario guest;
 	
+	@ManyToOne
+	@JoinColumn(nullable = false,name = "project_id")
+	private Project project;
+	
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20, nullable = false)
+    @NotNull
+	private ProjectRole role;
+		
 	@NotNull
 	@Column(nullable = false)
 	private Short status;
@@ -73,22 +59,16 @@ public class Project {
 
 	@Column(name = "fecha_modificacion", nullable = true)
 	private LocalDateTime fechaModificacion;
-
-	@Column(length = 50, nullable = true, name = "usuario_modificacion")
-	@Size(max = 50)
-	private String usuarioModificacion;
-	
 	
 	@PrePersist
 	public void prePersist() {
 		this.fechaCreacion = LocalDateTime.now();		
-		this.status = Constants.STATUS_ACTIVE;
+		this.status = Constants.STATUS_PENDING;
 	}
 
 	@PreUpdate
 	public void preUpdate() {		
 		this.fechaModificacion = LocalDateTime.now();
 	}
-
 	
 }

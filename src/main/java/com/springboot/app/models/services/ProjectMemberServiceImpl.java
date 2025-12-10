@@ -72,7 +72,7 @@ public class ProjectMemberServiceImpl implements IProjectMemberService {
 
 	@Override
 	@Transactional
-	public ProjectMemberDto save(String projectId,@Valid ProjectMemberDto dto, CustomUserDetails authUser) {
+	public ProjectMemberDto save(String projectId,@Valid ProjectMemberDto dto, Long authUserId) {
 		
 		ProjectMember member;
 		
@@ -82,7 +82,7 @@ public class ProjectMemberServiceImpl implements IProjectMemberService {
 			throw new IllegalArgumentException("Rol invalido");
 		}
 
-		if (!isOwner(authUser.getUserId(), projectId)) {
+		if (!isOwner(authUserId, projectId)) {
 
 		throw new SecurityException("No tiene los permisos necesario en este proyecto");
 		}
@@ -121,9 +121,9 @@ public class ProjectMemberServiceImpl implements IProjectMemberService {
 		member.setRole(dto.getRole());
 		
 		if (isUpdate) {
-			member.setUsuarioModificacion(usuarioDao.findUsernameById(authUser.getUserId()));
+			member.setUsuarioModificacion(usuarioDao.findUsernameById(authUserId));
 		}else {
-			member.setUsuarioCreacion(usuarioDao.findUsernameById(authUser.getUserId()));
+			member.setUsuarioCreacion(usuarioDao.findUsernameById(authUserId));
 		}
 		
 		

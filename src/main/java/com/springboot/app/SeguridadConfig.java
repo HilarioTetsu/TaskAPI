@@ -57,7 +57,7 @@ public class SeguridadConfig {
 		CorsConfiguration config = new CorsConfiguration();
 
 		// Orígenes permitidos
-		config.setAllowedOrigins(List.of("http://localhost:4200", "https://tu-dominio.com" // Front en producción
+		config.setAllowedOrigins(List.of("http://localhost:5173", "https://tu-dominio.com" // Front en producción
 		));
 
 		config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));

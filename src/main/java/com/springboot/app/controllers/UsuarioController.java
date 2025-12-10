@@ -51,13 +51,24 @@ public class UsuarioController {
 			@ApiResponse(responseCode = "200", description = "Lista de usuarios encontrada.", content = @Content(mediaType = "application/json", array = @ArraySchema(schema = @Schema(implementation = UsuarioAuthInfoDto.class)))),
 			@ApiResponse(responseCode = "403", description = "El usuario no es miembro del proyecto.", content = @Content) })
 	@GetMapping("/search")
-	public ResponseEntity<List<UsuarioAuthInfoDto>> getUsersContainingUsername(
+	public ResponseEntity<List<UsuarioAuthInfoDto>> getUsersContainingUsernameInProject(
 			@Parameter(description = "Texto parcial del username a buscar.", example = "team") @RequestParam(required = true) String term,
 			@Parameter(description = "GUID del proyecto donde se está buscando.", example = "b3b6a1c5-9d8e-4f2c-9013-0b40e9f5f111") @RequestParam(required = true) String projectId,
 			@AuthenticationPrincipal CustomUserDetails authUser) {
 
 		return ResponseEntity
 				.ok(usuarioService.findByUsernameContainingAndProjectId(term, projectId, authUser.getUserId()));
+
+	}
+	
+	@GetMapping("/search/by-username-or-email")
+	public ResponseEntity<List<UsuarioAuthInfoDto>> getUsersContainingUsernameOrEmail(
+			@RequestParam(required = true) String term,
+			@RequestParam(required = true) String projectId,
+			@AuthenticationPrincipal CustomUserDetails authUser) {
+
+		return ResponseEntity
+				.ok(usuarioService.findByUsernameContainingOrEmailContaining(term, projectId, authUser.getUserId()));
 
 	}
 

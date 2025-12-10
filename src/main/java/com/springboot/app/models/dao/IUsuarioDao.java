@@ -33,5 +33,7 @@ public interface IUsuarioDao extends JpaRepository<Usuario, Long>{
 	
 	@NativeQuery("select u.username from usuarios u where u.id=?1")
 	String findUsernameById(Long Id);
+
+	List<Usuario> findByUsernameContainingOrEmailContaining(String username,String email);
 	
 }

@@ -27,6 +27,8 @@ public interface IUsuarioService {
 	UsuarioAuthInfoDto findUserById(Long userId);
 
 	List<UsuarioAuthInfoDto> findByUsernameContainingAndProjectId(String term, String projectId, Long userId);
+	
+	List<UsuarioAuthInfoDto> findByUsernameContainingOrEmailContaining(String term, String projectId, Long authUserId);
 
 	UsuarioAuthInfoDto updateUserInfo(UsuarioUpdateDto dto, Long userId);
 

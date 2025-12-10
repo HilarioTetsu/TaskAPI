@@ -68,6 +68,12 @@ public class Usuario {
     @OneToMany(mappedBy = "usuario")
     private List<ProjectMember> projectMembers;
     
+    @OneToMany(mappedBy = "host")
+    private List<Invitation> hostInvitations;
+    
+    @OneToMany(mappedBy = "guest")
+    private List<Invitation> guestInvitations;
+    
 	@NotNull
 	@Column(nullable = false)
 	private Short status;
