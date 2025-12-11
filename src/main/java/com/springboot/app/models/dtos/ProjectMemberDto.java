@@ -18,6 +18,7 @@ public class ProjectMemberDto {
 		this.projectId=member.getProject().getIdGuid();
 		this.role=member.getRole();
 		this.status=member.getStatus();
+		this.username=member.getUsuario().getUsername();
 	}
 
 
@@ -27,7 +28,7 @@ public class ProjectMemberDto {
 	@NotNull
 	private Long usuarioId;
 
-
+	private String username;
 	
 	private String projectId;
 

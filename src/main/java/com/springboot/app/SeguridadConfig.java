@@ -60,7 +60,7 @@ public class SeguridadConfig {
 		config.setAllowedOrigins(List.of("http://localhost:5173", "https://tu-dominio.com" // Front en producción
 		));
 
-		config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+		config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS","PATCH"));
 
 		config.setAllowedHeaders(List.of("*"));
 
