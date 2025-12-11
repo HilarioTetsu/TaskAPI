@@ -115,13 +115,30 @@ public class ProjectController {
 	}
 
 
-	@GetMapping
-	public ResponseEntity<Map<String, List<ProjectDto>>> getAllProjects(@AuthenticationPrincipal CustomUserDetails authUser) {
-
-		return ResponseEntity.ok().body(projectService.findProjectsById(authUser.getUserId()));
-
-	}
-
+	@Operation(
+	        summary = "Listar todos los proyectos del usuario",
+	        description = """
+	            Retorna un mapa con dos listas de proyectos:
+	            1. **owned**: Proyectos donde el usuario es el dueño (OWNER).
+	            2. **collaborations**: Proyectos donde el usuario es miembro (EDITOR o VIEWER).
+	            """
+	    )
+	    @ApiResponses({
+	        @ApiResponse(
+	            responseCode = "200",
+	            description = "Listas de proyectos clasificadas correctamente.",
+	            content = @Content(
+	                mediaType = "application/json",
+	                schema = @Schema(example = "{\"owned\": [], \"collaborations\": []}")
+	            )
+	        )
+	    })
+		@GetMapping
+		public ResponseEntity<Map<String, List<ProjectDto>>> getAllProjects(@AuthenticationPrincipal CustomUserDetails authUser) {
+			return ResponseEntity.ok().body(projectService.findProjectsById(authUser.getUserId()));
+		}
+	
+	
 	@Operation(summary = "Crear o actualizar un proyecto", description = """
 			Crea un nuevo proyecto o actualiza uno existente.
 

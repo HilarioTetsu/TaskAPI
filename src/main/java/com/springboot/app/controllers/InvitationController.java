@@ -1,6 +1,7 @@
 package com.springboot.app.controllers;
 
-import java.util.List;
+
+
 import java.util.Map;
 
 import org.springframework.data.domain.Page;
@@ -21,6 +22,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -59,16 +61,35 @@ public class InvitationController {
 	}
 	
 	
-	@GetMapping
-	public ResponseEntity<Page<InvitationViewDto>> getAllInvitations(@RequestParam(required = false) String status,
-			@Parameter(description = "Número de página (0-based).", example = "0") @RequestParam(defaultValue = "0") Integer pagina,
-			@Parameter(description = "Tamaño de página.", example = "5") @RequestParam(defaultValue = "5") Integer tamanio,
-			@Parameter(description = "Ordenamiento. Formato: campo,dir; Ej: fecha_creacion,desc;", example = "fecha_creacion,desc;") @RequestParam(defaultValue = "fecha_creacion,desc;") String sorts,
-			@AuthenticationPrincipal CustomUserDetails authUser) {
+	@Operation(
+	        summary = "Listar invitaciones recibidas o enviadas",
+	        description = """
+	            Obtiene un listado paginado de las invitaciones asociadas al usuario.
+	            
+	            - Puede filtrar por estatus específico (PENDING, ACCEPTED, REJECTED).
+	            - Permite ordenamiento dinámico.
+	            """
+	    )
+	    @ApiResponses({
+	        @ApiResponse(
+	            responseCode = "200",
+	            description = "Pagina de invitaciones obtenida correctamente.",
+	            content = @Content(
+	                mediaType = "application/json",
+	                array = @ArraySchema(schema = @Schema(implementation = InvitationViewDto.class))
+	            )
+	        )
+	    })
+		@GetMapping
+		public ResponseEntity<Page<InvitationViewDto>> getAllInvitations(@RequestParam(required = false) String status,
+				@Parameter(description = "Número de página (0-based).", example = "0") @RequestParam(defaultValue = "0") Integer pagina,
+				@Parameter(description = "Tamaño de página.", example = "5") @RequestParam(defaultValue = "5") Integer tamanio,
+				@Parameter(description = "Ordenamiento. Formato: campo,dir; Ej: fecha_creacion,desc;", example = "fecha_creacion,desc;") @RequestParam(defaultValue = "fecha_creacion,desc;") String sorts,
+				@AuthenticationPrincipal CustomUserDetails authUser) {
 
-		return ResponseEntity.ok(invitationService.getAllInvitations(authUser.getUserId(),status,pagina,tamanio,sorts));
+			return ResponseEntity.ok(invitationService.getAllInvitations(authUser.getUserId(),status,pagina,tamanio,sorts));
 
-	}
+		}
 
 	@Operation(summary = "Invitar usuario a un proyecto", description = """
 			Crea una invitación para que un usuario se una a un proyecto con un rol específico.
