@@ -14,6 +14,22 @@ public interface IProjectDao extends JpaRepository<Project, String>{
 
 	@NativeQuery("SELECT p.* from project p WHERE p.owner_id=?1 AND p.status=?2 ;")
 	List<Project> findByOwnerId(Long userId,Short status);
+	
+	@NativeQuery("""
+		select
+		p.*
+	from
+		project_members pm
+	inner join project p 
+	    on
+		pm.project_id = p.id_guid
+	where
+		pm.usuario_id = ?1
+		and pm.role != 'OWNER'
+		and pm.status = 1
+		and p.status = 1;
+			""")
+	List<Project> findProjectsLikeMemberByUserId(Long userId);
 
 	@NativeQuery("SELECT p.* FROM project p WHERE p.id_guid=?1 AND p.status=?2 ;")
 	Optional<Project> findProjectActiveById(String id,Short status);

@@ -1,12 +1,14 @@
 package com.springboot.app.models.services;
 
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -49,9 +51,7 @@ public class ProjectServiceImpl implements IProjectService {
 
 	@Override
 	public List<ProjectDto> findByOwnerId(Long userId) {
-		
-		
-		
+						
 		return projectDao.findByOwnerId(userId,Constants.STATUS_ACTIVE)
 				.stream()
 				.map
@@ -135,9 +135,15 @@ public class ProjectServiceImpl implements IProjectService {
 
 
 	@Override
-	public ProjectDto findByProjectIdAndUserId(String id, Long userId) {
+	public ProjectDto findByProjectIdAndUserId(String projectId, Long userId) {
 		
-		Project project = projectDao.findByIdAndUserId(id,userId).orElseThrow(() -> new NoSuchElementException("Projecto no encontrado"));
+		if (!projectMemberService.isMember(userId, projectId)) {
+			throw new AccessDeniedException("No puedes acceder a la informacion de este proyecto");
+		}
+		
+		
+		
+		Project project = findByProjectId(projectId).orElseThrow(() -> new NoSuchElementException("Projecto no encontrado"));
 		
 		return new ProjectDto(project);
 	}
@@ -217,6 +223,29 @@ public class ProjectServiceImpl implements IProjectService {
 	public int getProjectCountActive(Long userId) {
 		
 		return projectDao.getProjectCountActive(userId);
+	}
+
+	@Override
+	public Map<String, List<ProjectDto>> findProjectsById(Long userId) {
+		
+		List<ProjectDto> owned= findByOwnerId(userId);
+		
+		List<ProjectDto> collaborations = findProjectsLikeMemberByUserId(userId);
+		
+		Map<String, List<ProjectDto>> response = new HashMap<>();
+        response.put("owned", owned);
+        response.put("collaborations", collaborations);
+		
+		return response;
+	}
+
+	@Override
+	public List<ProjectDto> findProjectsLikeMemberByUserId(Long userId) {
+		
+		return projectDao.findProjectsLikeMemberByUserId(userId)
+				.stream()
+				.map(p -> new ProjectDto(p))
+				.toList();
 	}
 
 

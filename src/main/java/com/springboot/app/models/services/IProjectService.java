@@ -31,6 +31,10 @@ public interface IProjectService {
 	public Map<Short, String> getAllStatuses();
 	
 	 public String getStatusByKey(short statusKey);
+
+	 Map<String, List<ProjectDto>> findProjectsById(Long userId);
+	 
+	 List<ProjectDto> findProjectsLikeMemberByUserId(Long userId);
 	
 
 }

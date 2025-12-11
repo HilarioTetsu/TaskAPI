@@ -114,13 +114,11 @@ public class ProjectController {
 
 	}
 
-	@Operation(summary = "Listar proyectos del usuario", description = "Lista todos los proyectos activos donde el usuario autenticado es OWNER.")
-	@ApiResponses({
-			@ApiResponse(responseCode = "200", description = "Lista de proyectos devuelta correctamente.", content = @Content(mediaType = "application/json", array = @ArraySchema(schema = @Schema(implementation = ProjectDto.class)))) })
-	@GetMapping
-	public ResponseEntity<List<ProjectDto>> getAllProjects(@AuthenticationPrincipal CustomUserDetails authUser) {
 
-		return ResponseEntity.ok().body(projectService.findByOwnerId(authUser.getUserId()));
+	@GetMapping
+	public ResponseEntity<Map<String, List<ProjectDto>>> getAllProjects(@AuthenticationPrincipal CustomUserDetails authUser) {
+
+		return ResponseEntity.ok().body(projectService.findProjectsById(authUser.getUserId()));
 
 	}
 
