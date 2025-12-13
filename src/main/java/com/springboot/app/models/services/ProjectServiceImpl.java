@@ -138,7 +138,7 @@ public class ProjectServiceImpl implements IProjectService {
 	public ProjectDto findByProjectIdAndUserId(String projectId, Long userId) {
 		
 		if (!projectMemberService.isMember(userId, projectId)) {
-			throw new AccessDeniedException("No puedes acceder a la informacion de este proyecto");
+			throw new SecurityException("No puedes acceder a la informacion de este proyecto");
 		}
 		
 		
