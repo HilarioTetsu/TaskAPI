@@ -3,6 +3,7 @@ package com.springboot.app.models.services;
 import java.util.Arrays;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.security.access.AccessDeniedException;
@@ -91,7 +92,7 @@ public class ProjectMemberServiceImpl implements IProjectMemberService {
 			throw new NoSuchElementException("Usuario no encontrado");
 		}
 
-		if (isMember(dto.getUsuarioId(), projectId)) {
+		if (isMemberActive(dto.getUsuarioId(), projectId)) {
 			throw new IllegalStateException("Miembro ya registrado en el proyecto");
 		}
 		
@@ -281,6 +282,12 @@ public class ProjectMemberServiceImpl implements IProjectMemberService {
 		 save(member);
 		 
 		 
+	}
+
+	@Override
+	public Optional<ProjectMember> findByUsuarioIdAndProjectId(Long userId, String projectId) {
+		
+		return projectMemberDao.findByUsuarioIdAndProjectIdGuid(userId, projectId);
 	}
 
 	

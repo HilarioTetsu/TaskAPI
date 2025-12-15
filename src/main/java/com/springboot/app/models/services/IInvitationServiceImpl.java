@@ -19,6 +19,7 @@ import com.springboot.app.models.dtos.InvitationViewDto;
 import com.springboot.app.models.dtos.ProjectMemberDto;
 import com.springboot.app.models.entities.Invitation;
 import com.springboot.app.models.entities.Project;
+import com.springboot.app.models.entities.ProjectMember;
 import com.springboot.app.models.entities.Usuario;
 import com.springboot.app.utils.Constants;
 import com.springboot.app.utils.ProjectRole;
@@ -55,7 +56,7 @@ public class IInvitationServiceImpl implements IInvitationService {
 			throw new SecurityException("No tienes los permisos para realizar esta acccion");
 		}						
 		
-		if (projectMemberService.isMember(invitationDto.getUserGuestId(), project.getIdGuid())) {
+		if (projectMemberService.isMemberActive(invitationDto.getUserGuestId(), project.getIdGuid())) {
 			throw new IllegalStateException("El usuario a invitar ya es miembro");
 		}
 		
@@ -117,10 +118,15 @@ public class IInvitationServiceImpl implements IInvitationService {
 			
 			invitationDao.save(invitation);
 			
-			ProjectMemberDto projectMemberDto = new ProjectMemberDto();
+			
+			
+			ProjectMemberDto projectMemberDto =new ProjectMemberDto(projectMemberService
+					.findByUsuarioIdAndProjectId(invitation.getGuest().getId(), invitation.getProject().getIdGuid())
+					.orElse(new ProjectMember()));
 						
 			projectMemberDto.setRole(invitation.getRole());
 			projectMemberDto.setUsuarioId(invitation.getGuest().getId());
+			projectMemberDto.setStatus(Constants.STATUS_ACTIVE);
 			
 			projectMemberService.save(invitation.getProject().getIdGuid(), projectMemberDto, invitation.getHost().getId());
 			

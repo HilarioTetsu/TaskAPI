@@ -5,6 +5,7 @@ package com.springboot.app.models.services;
 
 
 import java.util.List;
+import java.util.Optional;
 
 import com.springboot.app.models.dtos.ProjectMemberDto;
 import com.springboot.app.models.entities.ProjectMember;
@@ -31,6 +32,9 @@ public interface IProjectMemberService {
 	ProjectMember findByUsuarioIdAndProjectIdGuidAndStatusIs(Long usuarioId, String projectId, Short statusActive);
 
 	ProjectMember findByUsuarioIdAndProjectIdGuid(Long userId, String projectId);
+	
+	
+	Optional<ProjectMember> findByUsuarioIdAndProjectId(Long userId, String projectId);
 
 	List<ProjectMemberDto> findProjectMembersByProjectId(Long userId, String projectId);
 	
