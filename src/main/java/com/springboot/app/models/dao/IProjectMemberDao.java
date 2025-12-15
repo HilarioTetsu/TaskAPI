@@ -43,13 +43,15 @@ public interface IProjectMemberDao extends JpaRepository<ProjectMember, Long>{
 
 	Optional<ProjectMember> findByUsuarioIdAndProjectIdGuid(Long userId, String projectId);
 
-	List<ProjectMember> findByProjectIdGuid(String projectId);
+	List<ProjectMember> findByProjectIdGuidAndStatusIs(String projectId, Short statusActive);
 
 	boolean existsByUsuarioIdAndProjectIdGuid(Long usuarioId, String projectId);
 
 	
 	@NativeQuery("SELECT COUNT(*) FROM project_members pm WHERE pm.role ='OWNER' ")
 	int getCountOwners(String projectId);
+
+	 
 
 }
 

@@ -5,6 +5,7 @@ import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.NativeQuery;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.springboot.app.models.dtos.UsuarioAuthInfoDto;
@@ -35,5 +36,23 @@ public interface IUsuarioDao extends JpaRepository<Usuario, Long>{
 	String findUsernameById(Long Id);
 
 	List<Usuario> findByUsernameContainingOrEmailContaining(String username,String email);
+
+	
+	@NativeQuery("""
+			
+	select
+		u.*
+	from
+		usuarios u
+	inner join project_members pm 
+	on
+		pm.usuario_id = u.id
+	where
+		u.username like :term
+		and pm.project_id = :projectId
+		and pm.status = 1
+		and u.status = 1 ;
+			""")
+	List<Usuario> findByUsernameContainingAndProjectId(@Param("term") String term, @Param("projectId") String projectId);
 	
 }

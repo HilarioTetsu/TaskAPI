@@ -135,8 +135,9 @@ public class UsuarioServiceImpl implements IUsuarioService {
 			throw new AccessDeniedException("No puedes realizar esa accion al no ser parte del proyecto");
 		}
 			
+		String pattern = "%" + term.toLowerCase() + "%";
 		
-		return usuarioDao.findByUsernameContaining(term).stream().map(u -> new UsuarioAuthInfoDto(u)).toList();
+		return usuarioDao.findByUsernameContainingAndProjectId(pattern,projectId).stream().map(u -> new UsuarioAuthInfoDto(u)).toList();
 	}
 
 	@Override

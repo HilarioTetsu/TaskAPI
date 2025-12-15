@@ -217,7 +217,7 @@ public class ProjectMemberServiceImpl implements IProjectMemberService {
 			throw new SecurityException("No tiene los permisos necesario en este proyecto");
 		}
 		
-		return projectMemberDao.findByProjectIdGuid(projectId).stream().map(
+		return projectMemberDao.findByProjectIdGuidAndStatusIs(projectId,Constants.STATUS_ACTIVE).stream().map(
 				member -> new ProjectMemberDto(member)
 				).toList();
 				
