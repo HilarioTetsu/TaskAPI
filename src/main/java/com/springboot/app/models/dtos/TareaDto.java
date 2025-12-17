@@ -19,7 +19,7 @@ public class TareaDto {
 
     
 	public TareaDto(Tarea tarea) {
-        // Tu lógica existente...
+        
 		this.idGuid=tarea.getIdGuid();
 		this.titulo=tarea.getTitulo();
 		this.descripcion=tarea.getDescripcion();
