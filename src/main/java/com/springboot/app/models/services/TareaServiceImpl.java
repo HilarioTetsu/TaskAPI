@@ -178,7 +178,7 @@ public class TareaServiceImpl implements ITareaService {
 		return saved;
 	}
 
-	private String generarMensajeCambiosTarea(Tarea tarea, TareaDto dto, Usuario user, PrioridadTarea prioridad, TareaStatus tareaStatus, Project project) {
+	public String generarMensajeCambiosTarea(Tarea tarea, TareaDto dto, Usuario user, PrioridadTarea prioridad, TareaStatus tareaStatus, Project project) {
 		
 		StringBuffer buffer = new StringBuffer();
 		

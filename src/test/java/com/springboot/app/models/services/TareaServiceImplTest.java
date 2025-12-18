@@ -3,6 +3,7 @@ package com.springboot.app.models.services;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.UUID;
@@ -14,10 +15,13 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.springboot.app.models.entities.Comment;
 import com.springboot.app.models.entities.PrioridadTarea;
 import com.springboot.app.models.entities.Project;
 import com.springboot.app.models.entities.Tarea;
 import com.springboot.app.models.entities.TareaStatus;
+import com.github.javafaker.Faker;
+import com.springboot.app.models.dao.ICommentDao;
 import com.springboot.app.models.dao.IPrioridadTareaDao;
 import com.springboot.app.models.dao.ITareaDao;
 import com.springboot.app.models.dao.ITareaStatusDao;
@@ -50,7 +54,9 @@ class TareaServiceImplTest {
 	@Mock
 	private IProjectMemberService projectMemberService;
 	@Mock
-	private ICommentService commentService;
+	private ICommentDao commentDao;
+
+	private static final Faker faker = new Faker();
 
 	@Test
 	void save_debeLanzarNoSuchElementException_siPrioridadNoExiste() {
@@ -76,7 +82,7 @@ class TareaServiceImplTest {
 
 		String tareaId = UUID.randomUUID().toString();
 
-		Long userId = Long.MAX_VALUE;
+		Long userId = faker.number().randomNumber();
 
 		when(tareaDao.findById(tareaId, userId)).thenReturn(Optional.empty());
 
@@ -117,7 +123,7 @@ class TareaServiceImplTest {
 
 		Long userAuthId = 10L;
 
-		TareaDto dto = new TareaDtoTestDataBuilder().withIdGuid(null).build();
+		TareaDto dto = new TareaDtoTestDataBuilder().withIdGuid(null).withProjectId(null).build();
 
 		PrioridadTarea prioridad = new PrioridadTareaTestDataBuilder().withId(dto.getId_prioridad()).build();
 
@@ -163,6 +169,7 @@ class TareaServiceImplTest {
 
 	@Test
 	void save_debeCrearTarea_yVincularAlProyecto_siProjectExiste() {
+		// Arrange
 
 		Long userAuthId = 10L;
 
@@ -186,14 +193,16 @@ class TareaServiceImplTest {
 
 		when(projectMemberService.canEditTasks(userAuthId, project.getIdGuid())).thenReturn(true);
 
-		ArgumentCaptor<Tarea> tareaCaptor = ArgumentCaptor.forClass(Tarea.class);
-
 		when(tareaDao.saveAndFlush(any(Tarea.class))).thenAnswer(inv -> inv.getArgument(0));
+
+		ArgumentCaptor<Tarea> tareaCaptor = ArgumentCaptor.forClass(Tarea.class);
 
 		TareaServiceImpl spyService = spy(tareaService);
 
+		// Act
 		TareaDto result = spyService.save(dto, userAuthId);
 
+		// Assert
 		assertNotNull(result);
 		assertNotNull(result.getIdGuid(), "Debe generar GUID al crear");
 		assertEquals(dto.getTitulo(), result.getTitulo());
@@ -213,6 +222,116 @@ class TareaServiceImplTest {
 		verify(projectMemberService).canEditTasks(eq(userAuthId), eq(project.getIdGuid()));
 
 		verify(spyService, never()).asignarTarea(anyList(), anyString(), anyLong());
+
+	}
+
+	@Test
+	void save_update_debeActualizarTarea_yGuardarComment_siProjectExiste() {
+
+		Long userAuthId = 10L;
+
+		TareaDto tareaDto = new TareaDtoTestDataBuilder().build();
+
+		Usuario authUser = new UsuarioTestDataBuilder().withId(userAuthId).build();
+
+		Project project = new ProjectTestDataBuilder().withIdGuid(tareaDto.getProject_id()).build();
+
+		Usuario ownerProject = project.getOwner();
+
+		PrioridadTarea prioridad = new PrioridadTareaTestDataBuilder().withId(tareaDto.getId_prioridad()).build();
+
+		TareaStatus tareaStatus = new TareaStatusTestDataBuilder().withId(tareaDto.getId_tarea_status()).build();
+
+		Usuario asignado1 = authUser;
+		
+		 Usuario asignado2 = new UsuarioTestDataBuilder().withId(55L).build();
+
+		Tarea tarea = new TareaTestDataBuilder().withId(tareaDto.getIdGuid()).withPrioridadTarea(prioridad)
+				.withTareaStatus(tareaStatus).withUsuarios(List.of(asignado1, asignado2)).withProject(project).build();
+
+		Usuario tareaOwner = tarea.getOwner();
+
+		when(prioridadDao.findById(tareaDto.getId_prioridad())).thenReturn(Optional.of(prioridad));
+
+		when(tareaStatusDao.findById(tareaDto.getId_tarea_status())).thenReturn(Optional.of(tareaStatus));
+
+		when(tareaDao.findById(tareaDto.getIdGuid(), userAuthId)).thenReturn(Optional.of(tarea));
+
+		when(usuarioService.findByUserId(userAuthId)).thenReturn(authUser);
+
+		when(projectService.findByProjectId(tareaDto.getProject_id())).thenReturn(Optional.of(project));
+
+		when(projectMemberService.canEditTasks(userAuthId, project.getIdGuid())).thenReturn(true);
+
+		TareaServiceImpl spyService = spy(tareaService);
+
+		doReturn("Campo ha cambiado a void por el usuario x").when(spyService).generarMensajeCambiosTarea(
+				any(Tarea.class), any(TareaDto.class), any(Usuario.class), any(PrioridadTarea.class),
+				any(TareaStatus.class), any(Project.class));
+
+		// despues de remover las menciones al usuario auth
+		List<Long> expectedMentionsIds = List.of(asignado2.getId(), ownerProject.getId(), tareaOwner.getId());
+
+		when(usuarioService.findAllByIds(
+				argThat(list -> list.containsAll(expectedMentionsIds) && list.size() == expectedMentionsIds.size())))
+				.thenReturn(List.of(asignado2, ownerProject,tareaOwner));
+
+		when(commentDao.save(any(Comment.class))).thenAnswer(inv -> {
+
+			Comment saved = inv.getArgument(0);
+
+			saved.setId(faker.number().randomNumber());
+
+			return saved;
+		});
+
+		when(tareaDao.saveAndFlush(any(Tarea.class))).thenAnswer(inv -> inv.getArgument(0));
+
+		ArgumentCaptor<Tarea> tareaCaptor = ArgumentCaptor.forClass(Tarea.class);
+
+		ArgumentCaptor<Comment> commentCaptor = ArgumentCaptor.forClass(Comment.class);
+
+		// Act
+
+		TareaDto result = spyService.save(tareaDto, userAuthId);
+
+		// Assert
+
+		assertNotNull(result);
+
+		assertEquals(tareaDto.getTitulo(), result.getTitulo());
+		assertEquals(tareaDto.getDescripcion(), result.getDescripcion());
+		assertEquals(tareaDto.getProject_id(), result.getProject_id());
+		assertEquals(tareaDto.getId_prioridad(), result.getId_prioridad());
+		assertEquals(tareaDto.getId_tarea_status(), result.getId_tarea_status());
+
+		verify(commentDao).save(commentCaptor.capture());
+
+		Comment savedComment = commentCaptor.getValue();
+
+		assertEquals("Campo ha cambiado a void por el usuario x",savedComment.getBody());
+		assertSame(authUser, savedComment.getAutor());
+		assertSame(tarea, savedComment.getTarea());
+		assertNotNull(savedComment.getMentions());
+
+		System.out.println(savedComment.getMentions().stream().map(u -> u.getId()).toList());
+		
+		assertTrue(savedComment.getMentions().stream().map(u -> u.getId()).toList().containsAll(expectedMentionsIds));
+
+		verify(tareaDao).saveAndFlush(tareaCaptor.capture());
+
+		Tarea savedTarea = tareaCaptor.getValue();
+
+		assertEquals(tareaDto.getTitulo(), savedTarea.getTitulo());
+		assertEquals(tareaDto.getDescripcion(), savedTarea.getDescripcion());
+		assertSame(prioridad, savedTarea.getPrioridad());
+		assertSame(tareaStatus, savedTarea.getTareaStatus());
+		assertSame(project, savedTarea.getProject());
+		assertEquals(authUser.getUsername(), savedTarea.getUsuarioModificacion());
+
+		verify(spyService, never()).asignarTarea(anyList(), anyString(), anyLong());
+
+		verify(projectMemberService).canEditTasks(eq(userAuthId), eq(project.getIdGuid()));
 
 	}
 

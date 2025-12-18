@@ -13,13 +13,13 @@ public class UsuarioTestDataBuilder {
 
     private static final Faker faker = new Faker();
 
-    private Long id = faker.number().numberBetween(Long.MIN_VALUE, Long.MAX_VALUE); 
+    private Long id = faker.number().numberBetween(0, Long.MAX_VALUE); 
     private String email = faker.internet().emailAddress();
     private String username = faker.name().username();
     private String password ="$2a$10$/WG6.DlBIoDDv5dS1fnszuCEyBHODY8zIFmzB71fqF4WfVN5JMmRS";
     private Short status = Constants.STATUS_ACTIVE;
 
-    private List<Rol> roles = Collections.emptyList();
+    private List<Rol> roles = List.of(new Rol((short)1,"Basico",(short) 1,null) );
 
 
     public UsuarioTestDataBuilder withId(Long id) {

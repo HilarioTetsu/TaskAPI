@@ -21,7 +21,7 @@ public class TareaDtoTestDataBuilder {
 
     private Short idTareaStatus = 1;
     private Short idPrioridad = 2;
-    private String projectId = null;
+    private String projectId = UUID.randomUUID().toString();
 
 
     private List<TagDto> listTag = null;

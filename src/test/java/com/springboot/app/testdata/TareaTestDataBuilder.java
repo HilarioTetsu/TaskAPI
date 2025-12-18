@@ -3,6 +3,7 @@ package com.springboot.app.testdata;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 
 import com.github.javafaker.Faker;
@@ -24,13 +25,15 @@ public class TareaTestDataBuilder {
     private String descripcion = faker.lorem().sentence();
     
     private Usuario owner = new UsuarioTestDataBuilder()
-    						.withId(faker.number().numberBetween(Long.MIN_VALUE, Long.MAX_VALUE)).build();
+    						.withId(faker.number().numberBetween(0, Long.MAX_VALUE)).build();
     
     private TareaStatus tareaStatus= new TareaStatusTestDataBuilder().build();
     
     private PrioridadTarea prioridadTarea = new PrioridadTareaTestDataBuilder().build();
     
     private Project project = new ProjectTestDataBuilder().build();
+    
+    private List<Usuario> usuarios = null;
     
     Date futureDate = faker.date().future(30, java.util.concurrent.TimeUnit.DAYS);
     
@@ -51,6 +54,21 @@ public class TareaTestDataBuilder {
         return this;
     }
     
+    public TareaTestDataBuilder withPrioridadTarea(PrioridadTarea prioridad) {
+        this.prioridadTarea = prioridad;
+        return this;
+    }
+    
+    public TareaTestDataBuilder withTareaStatus(TareaStatus status) {
+        this.tareaStatus = status;
+        return this;
+    }
+    
+    public TareaTestDataBuilder withUsuarios(List<Usuario> usuariosAsignados) {
+        this.usuarios = usuariosAsignados;
+        return this;
+    }
+    
     
     public Tarea build() {
         Tarea tarea = new Tarea();
@@ -62,6 +80,7 @@ public class TareaTestDataBuilder {
         tarea.setPrioridad(prioridadTarea);
         tarea.setTareaStatus(tareaStatus);
         tarea.setProject(project);
+        tarea.setUsuarios(usuarios);
         tarea.setStatus(Constants.STATUS_ACTIVE);
         tarea.setFechaLimite(fechaLimite);
         tarea.setFechaCreacion(LocalDateTime.now());

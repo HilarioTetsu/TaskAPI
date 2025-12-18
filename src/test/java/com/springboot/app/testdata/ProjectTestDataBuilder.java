@@ -15,16 +15,16 @@ public class ProjectTestDataBuilder {
     private static final Faker faker = new Faker();
 
     
-    private String idGuid = UUID.randomUUID().toString(); // 36 chars
+    private String idGuid = UUID.randomUUID().toString(); 
     private String name = faker.company().name();
     private String descripcion = faker.lorem().paragraph();
 
     private Usuario owner = new UsuarioTestDataBuilder()
-			.withId(faker.number().numberBetween(Long.MIN_VALUE, Long.MAX_VALUE)).build();
+			.withId(faker.number().numberBetween(0, Long.MAX_VALUE)).build();
 
   
 
-    // Auditoría/estado
+    
     private Short status = Constants.STATUS_ACTIVE;
     private LocalDateTime fechaCreacion = LocalDateTime.now();
     private LocalDateTime fechaModificacion = null;
