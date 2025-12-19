@@ -69,6 +69,16 @@ public class TareaTestDataBuilder {
         return this;
     }
     
+    public TareaTestDataBuilder withTitulo(String titulo) {
+        this.titulo = titulo;
+        return this;
+    }
+    
+    public TareaTestDataBuilder withDescripcion(String desc) {
+        this.descripcion = desc;
+        return this;
+    }
+    
     
     public Tarea build() {
         Tarea tarea = new Tarea();

@@ -35,6 +35,7 @@ import com.springboot.app.models.entities.TareaStatus;
 import com.springboot.app.models.entities.TareaTags;
 import com.springboot.app.models.entities.Usuario;
 import com.springboot.app.utils.Constants;
+import com.springboot.app.utils.TareaChangeLogHelper;
 import com.springboot.app.utils.Utils;
 
 @Service
@@ -55,17 +56,15 @@ public class TareaServiceImpl implements ITareaService {
 	private final IProjectMemberService projectMemberService;
 
 	private final ITagService tagService;
-	
+
 	private final ICommentDao commentDao;
 
-
-
-
+	private final TareaChangeLogHelper tareaLogHelper;
 
 	public TareaServiceImpl(ITareaDao tareaDao, IPrioridadTareaDao prioridadDao, ITareaStatusDao tareaStatusDao,
 			ITareaTagsDao tareaTagsDao, IUsuarioService usuarioService, IProjectService projectService,
-			IProjectMemberService projectMemberService, ITagService tagService, ICommentDao commentDao) {
-		super();
+			IProjectMemberService projectMemberService, ITagService tagService, ICommentDao commentDao,
+			TareaChangeLogHelper tareaLogHelper) {
 		this.tareaDao = tareaDao;
 		this.prioridadDao = prioridadDao;
 		this.tareaStatusDao = tareaStatusDao;
@@ -75,6 +74,7 @@ public class TareaServiceImpl implements ITareaService {
 		this.projectMemberService = projectMemberService;
 		this.tagService = tagService;
 		this.commentDao = commentDao;
+		this.tareaLogHelper = tareaLogHelper;
 	}
 
 	@Override
@@ -92,7 +92,7 @@ public class TareaServiceImpl implements ITareaService {
 	public TareaDto save(TareaDto dto, Long userAuthId) {
 
 		boolean isUpdate = false;
-		
+
 		String cambiosTarea;
 
 		Optional<PrioridadTarea> prioridadTarea = prioridadDao.findById(dto.getId_prioridad());
@@ -117,46 +117,43 @@ public class TareaServiceImpl implements ITareaService {
 		Usuario user = usuarioService.findByUserId(userAuthId);
 
 		Project project = projectService.findByProjectId(dto.getProject_id()).orElse(null);
-		
-		if (project!=null && !projectMemberService.canEditTasks(userAuthId, project.getIdGuid())) {
-			
-			throw new SecurityException("No tienes permitido crear una tarea en este proyecto");
+
+		if (project != null && !projectMemberService.canEditTasks(userAuthId, project.getIdGuid())) {
+
+			throw new SecurityException("No tienes permisos para gestionar tareas en este proyecto");
 		}
 
-		
 		if (isUpdate) {
-								
-			cambiosTarea = generarMensajeCambiosTarea(tarea,dto,user,prioridadTarea.get(),tareaStatus.get(),project);
-						
+
+			cambiosTarea = tareaLogHelper.generarMensajeCambiosTarea(tarea, dto, user, prioridadTarea.get(),
+					tareaStatus.get(), project);
+
 			List<Long> mentionsIds = new ArrayList<>();
 			Comment comment = new Comment();
-			
-			comment.setBody(cambiosTarea);			
+
+			comment.setBody(cambiosTarea);
 			comment.setAutor(user);
 			comment.setTarea(tarea);
-			
-			
-			
-			
-			mentionsIds.addAll(tarea.getUsuarios().stream().map(u -> u.getId()).toList());
-									
-			mentionsIds.add(project.getOwner().getId());
-			
-			mentionsIds.add(tarea.getOwner().getId());
-			
-			
-			mentionsIds.removeIf(u -> u == userAuthId);
-			
-			comment.setMentions(usuarioService.findAllByIds(mentionsIds));
-			
+
+			if (project != null) {
+				mentionsIds.addAll(tarea.getUsuarios().stream().map(u -> u.getId()).toList());
+
+				mentionsIds.add(project.getOwner().getId());
+
+				mentionsIds.add(tarea.getOwner().getId());
+
+				mentionsIds.removeIf(u -> u.equals(userAuthId));
+
+				comment.setMentions(usuarioService.findAllByIds(mentionsIds));
+			}
+
 			commentDao.save(comment);
-			
-			
+
 			tarea.setUsuarioModificacion(user.getUsername());
 		} else {
 			tarea.setOwner(user);
 		}
-		
+
 		tarea.setTitulo(dto.getTitulo());
 		tarea.setDescripcion(dto.getDescripcion());
 		tarea.setFechaLimite(dto.getFechaLimite());
@@ -165,56 +162,13 @@ public class TareaServiceImpl implements ITareaService {
 		tarea.setTareaStatus(tareaStatus.get());
 		tarea.setProject(project);
 
-
-
 		TareaDto saved = new TareaDto(tareaDao.saveAndFlush(tarea));
 
 		if (project == null) {
 			asignarTarea(Arrays.asList(userAuthId), saved.getIdGuid(), userAuthId);
 		}
-						
-		
 
 		return saved;
-	}
-
-	public String generarMensajeCambiosTarea(Tarea tarea, TareaDto dto, Usuario user, PrioridadTarea prioridad, TareaStatus tareaStatus, Project project) {
-		
-		StringBuffer buffer = new StringBuffer();
-		
-		String msg="%s ha cambiado a \"%s\" por el usuario %s \n\n";
-		
-		if (!tarea.getTitulo().equals(dto.getTitulo())) {
-			buffer.append(String.format(msg, "Titulo",dto.getTitulo(),user.getUsername()));
-		}
-		
-		
-		if (!tarea.getDescripcion().equals(dto.getDescripcion())) {
-			buffer.append(String.format(msg, "Descripcion",dto.getDescripcion(),user.getUsername()));
-		}
-		
-		if (!tarea.getFechaLimite().equals(dto.getFechaLimite())) {
-			buffer.append(String.format(msg, "Fecha limite",dto.getFechaLimite().toString(),user.getUsername()));
-		}
-		
-		if (!tarea.getStatus().equals(dto.getStatus())) {
-			buffer.append(String.format(msg, "Status",projectService.getStatusByKey(dto.getStatus()),user.getUsername()));
-		}
-		
-		if (!tarea.getPrioridad().getId().equals(dto.getId_prioridad())) {
-			buffer.append(String.format(msg, "Prioridad",prioridad.getPrioridadTipo(),user.getUsername()));
-		}
-		
-		if (!tarea.getTareaStatus().getId().equals(dto.getId_tarea_status())) {
-			buffer.append(String.format(msg, "Status de la tarea",tareaStatus.getStatus(),user.getUsername()));
-		}
-		
-		if (project!=null && !tarea.getProject().getIdGuid().equals(dto.getProject_id())) {
-			buffer.append(String.format(msg, "El proyecto de la tarea",project.getName(),user.getUsername()));
-		}
-		
-		
-		return buffer.toString();
 	}
 
 	@Override
@@ -302,7 +256,7 @@ public class TareaServiceImpl implements ITareaService {
 
 			tarea.setUsuarios(usuarios);
 
-			save(tarea);
+			tareaDao.save(tarea);
 
 			return;
 
@@ -325,7 +279,7 @@ public class TareaServiceImpl implements ITareaService {
 
 		tarea.setUsuarios(usuarios);
 
-		save(tarea);
+		tareaDao.save(tarea);
 
 	}
 
@@ -366,14 +320,14 @@ public class TareaServiceImpl implements ITareaService {
 		if (!projectMemberService.canEditTasks(userAuthId, projecto.getIdGuid())) {
 			throw new SecurityException("No tiene los permisos necesarios sobre esta tarea");
 		}
-		
-		String username=usuarioService.findUsernameById(userAuthId);
+
+		String username = usuarioService.findUsernameById(userAuthId);
 
 		tarea.setStatus(Constants.STATUS_INACTIVE);
 		tarea.setUsuarioModificacion(username);
 		tarea.setUsuarios(null);
 
-		save(tarea);
+		tareaDao.save(tarea);
 
 	}
 
@@ -466,7 +420,7 @@ public class TareaServiceImpl implements ITareaService {
 	}
 
 	@Override
-	public List<TareaStatusDto> findAllTareaStatus() {		
+	public List<TareaStatusDto> findAllTareaStatus() {
 		return tareaStatusDao.findAll().stream().map(ts -> new TareaStatusDto(ts)).toList();
 	}
 
