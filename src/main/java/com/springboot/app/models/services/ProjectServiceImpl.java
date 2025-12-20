@@ -8,7 +8,6 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.UUID;
 
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -211,18 +210,6 @@ public class ProjectServiceImpl implements IProjectService {
 		projectDao.save(project);
 		
 		
-	}
-
-	@Override
-	public int getProjectCountRoleOwner(Long userId) {
-		
-		return projectDao.getProjectCountRoleOwner(userId);
-	}
-
-	@Override
-	public int getProjectCountActive(Long userId) {
-		
-		return projectDao.getProjectCountActive(userId);
 	}
 
 	@Override

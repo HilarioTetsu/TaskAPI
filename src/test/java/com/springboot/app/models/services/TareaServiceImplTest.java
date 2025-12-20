@@ -1,9 +1,27 @@
 package com.springboot.app.models.services;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.time.LocalDateTime;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyShort;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
+
+import java.time.LocalDate;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -15,18 +33,19 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 
+import com.github.javafaker.Faker;
+import com.springboot.app.models.dao.ICommentDao;
+import com.springboot.app.models.dao.ITareaDao;
+import com.springboot.app.models.dtos.TareaDto;
 import com.springboot.app.models.entities.Comment;
 import com.springboot.app.models.entities.PrioridadTarea;
 import com.springboot.app.models.entities.Project;
 import com.springboot.app.models.entities.Tarea;
 import com.springboot.app.models.entities.TareaStatus;
-import com.github.javafaker.Faker;
-import com.springboot.app.models.dao.ICommentDao;
-import com.springboot.app.models.dao.IPrioridadTareaDao;
-import com.springboot.app.models.dao.ITareaDao;
-import com.springboot.app.models.dao.ITareaStatusDao;
-import com.springboot.app.models.dtos.TareaDto;
 import com.springboot.app.models.entities.Usuario;
 import com.springboot.app.testdata.PrioridadTareaTestDataBuilder;
 import com.springboot.app.testdata.ProjectTestDataBuilder;
@@ -35,6 +54,7 @@ import com.springboot.app.testdata.TareaStatusTestDataBuilder;
 import com.springboot.app.testdata.TareaTestDataBuilder;
 import com.springboot.app.testdata.UsuarioTestDataBuilder;
 import com.springboot.app.utils.TareaChangeLogHelper;
+
 
 @ExtendWith(MockitoExtension.class)
 class TareaServiceImplTest {
@@ -45,18 +65,18 @@ class TareaServiceImplTest {
 	@Mock
 	private ITareaDao tareaDao;
 	@Mock
-	private IPrioridadTareaDao prioridadDao;
-	@Mock
-	private ITareaStatusDao tareaStatusDao;
-
-	@Mock
 	private IUsuarioService usuarioService;
 	@Mock
 	private IProjectService projectService;
+	
+	@Mock
+	private  CatalogoService catalogoService;
+	
 	@Mock
 	private IProjectMemberService projectMemberService;
 	@Mock
 	private ICommentDao commentDao;
+
 
 	@Mock
 	private TareaChangeLogHelper tareaLogHelper;
@@ -70,7 +90,9 @@ class TareaServiceImplTest {
 
 		TareaDto dto = new TareaDtoTestDataBuilder().build();
 
-		when(prioridadDao.findById(dto.getId_prioridad())).thenReturn(Optional.empty());
+		
+		
+		when(catalogoService.findPrioridadTareaById(dto.getId_prioridad())).thenReturn(Optional.empty());
 
 		// Act
 		NoSuchElementException ex = assertThrows(NoSuchElementException.class, () -> tareaService.save(dto, 10L));
@@ -78,9 +100,10 @@ class TareaServiceImplTest {
 		// Assert
 		assertTrue(ex.getMessage().toLowerCase().contains("prioridad"));
 
-		verify(prioridadDao).findById(dto.getId_prioridad());
+		verify(catalogoService).findPrioridadTareaById(dto.getId_prioridad());
 
-		verifyNoInteractions(tareaStatusDao);
+		
+		verify(catalogoService,never()).findTareaStatusById(anyShort());
 	}
 
 	@Test
@@ -94,9 +117,11 @@ class TareaServiceImplTest {
 
 		TareaDto dto = new TareaDtoTestDataBuilder().withPrioridad(prioridad.getId()).build();
 
-		when(prioridadDao.findById(dto.getId_prioridad())).thenReturn(Optional.of(prioridad));
+		when(catalogoService.findPrioridadTareaById(dto.getId_prioridad())).thenReturn(Optional.of(prioridad));
 
-		when(tareaStatusDao.findById(dto.getId_tarea_status())).thenReturn(Optional.empty());
+		
+		
+		when(catalogoService.findTareaStatusById(dto.getId_tarea_status())).thenReturn(Optional.empty());
 
 		// Act
 		NoSuchElementException ex = assertThrows(NoSuchElementException.class, () -> tareaService.save(dto, userAuthId));
@@ -104,9 +129,11 @@ class TareaServiceImplTest {
 		// Assert
 		assertTrue(ex.getMessage().toLowerCase().contains("status"));
 
-		verify(prioridadDao).findById(dto.getId_prioridad());
+		verify(catalogoService).findPrioridadTareaById(dto.getId_prioridad());
 
-		verify(tareaStatusDao).findById(dto.getId_tarea_status());
+		
+		
+		verify(catalogoService).findTareaStatusById(dto.getId_tarea_status());
 
 		verifyNoInteractions(tareaDao);
 	}
@@ -126,9 +153,9 @@ class TareaServiceImplTest {
 				.withTareaStatus(status.getId())
 				.build();
 
-		when(prioridadDao.findById(dto.getId_prioridad())).thenReturn(Optional.of(prioridad));
+		when(catalogoService.findPrioridadTareaById(dto.getId_prioridad())).thenReturn(Optional.of(prioridad));
 
-		when(tareaStatusDao.findById(dto.getId_tarea_status())).thenReturn(Optional.of(status));
+		when(catalogoService.findTareaStatusById(dto.getId_tarea_status())).thenReturn(Optional.of(status));
 
 		when(tareaDao.findById(dto.getIdGuid(), userAuthId)).thenThrow(new NoSuchElementException("Tarea no encontrada"));
 		
@@ -138,9 +165,11 @@ class TareaServiceImplTest {
 		// Assert
 		assertTrue(ex.getMessage().toLowerCase().contains("tarea"));
 
-		verify(prioridadDao).findById(dto.getId_prioridad());
+		verify(catalogoService).findPrioridadTareaById(dto.getId_prioridad());
+		
+		
 
-		verify(tareaStatusDao).findById(dto.getId_tarea_status());
+		verify(catalogoService).findTareaStatusById(dto.getId_tarea_status());
 
 		verifyNoInteractions(usuarioService);
 		verifyNoInteractions(projectService);
@@ -169,9 +198,9 @@ class TareaServiceImplTest {
 				.withTareaStatus(status)
 				.build();
 
-		when(prioridadDao.findById(dto.getId_prioridad())).thenReturn(Optional.of(prioridad));
+		when(catalogoService.findPrioridadTareaById(dto.getId_prioridad())).thenReturn(Optional.of(prioridad));
 
-		when(tareaStatusDao.findById(dto.getId_tarea_status())).thenReturn(Optional.of(status));
+		when(catalogoService.findTareaStatusById(dto.getId_tarea_status())).thenReturn(Optional.of(status));
 
 		when(tareaDao.findById(dto.getIdGuid(), userAuthId)).thenReturn(Optional.of(tarea));
 		
@@ -184,9 +213,9 @@ class TareaServiceImplTest {
 		// Assert
 		assertTrue(ex.getMessage().toLowerCase().contains("usuario"));
 
-		verify(prioridadDao).findById(dto.getId_prioridad());
+		verify(catalogoService).findPrioridadTareaById(dto.getId_prioridad());
 
-		verify(tareaStatusDao).findById(dto.getId_tarea_status());
+		verify(catalogoService).findTareaStatusById(dto.getId_tarea_status());
 
 		verify(tareaDao).findById(dto.getIdGuid(), userAuthId);
 		
@@ -227,9 +256,9 @@ class TareaServiceImplTest {
 		
 		
 
-		when(prioridadDao.findById(dto.getId_prioridad())).thenReturn(Optional.of(prioridad));
+		when(catalogoService.findPrioridadTareaById(dto.getId_prioridad())).thenReturn(Optional.of(prioridad));
 
-		when(tareaStatusDao.findById(dto.getId_tarea_status())).thenReturn(Optional.of(status));
+		when(catalogoService.findTareaStatusById(dto.getId_tarea_status())).thenReturn(Optional.of(status));
 
 		when(tareaDao.findById(dto.getIdGuid(), userAuthId)).thenReturn(Optional.of(tarea));
 		
@@ -245,9 +274,9 @@ class TareaServiceImplTest {
 		// Assert
 		assertTrue(ex.getMessage().toLowerCase().contains("no tienes permisos para gestionar tareas en este proyecto"));
 
-		verify(prioridadDao).findById(dto.getId_prioridad());
+		verify(catalogoService).findPrioridadTareaById(dto.getId_prioridad());
 
-		verify(tareaStatusDao).findById(dto.getId_tarea_status());
+		verify(catalogoService).findTareaStatusById(dto.getId_tarea_status());
 		
 		verify(tareaDao).findById(eq(dto.getIdGuid()), eq(userAuthId));
 
@@ -285,20 +314,12 @@ class TareaServiceImplTest {
 				.withIdGuid(dto.getProject_id())
 				.build();
 		
-		Tarea tarea = new TareaTestDataBuilder()
-				.withId(dto.getIdGuid())
-				.withTitulo(dto.getTitulo())
-				.withDescripcion(dto.getDescripcion())
-				.withPrioridadTarea(prioridad)
-				.withTareaStatus(status)
-				.withProject(project)
-				.build();
 		
 		
 
-		when(prioridadDao.findById(dto.getId_prioridad())).thenReturn(Optional.of(prioridad));
+		when(catalogoService.findPrioridadTareaById(dto.getId_prioridad())).thenReturn(Optional.of(prioridad));
 
-		when(tareaStatusDao.findById(dto.getId_tarea_status())).thenReturn(Optional.of(status));
+		when(catalogoService.findTareaStatusById(dto.getId_tarea_status())).thenReturn(Optional.of(status));
 				
 		when(usuarioService.findByUserId(userAuthId)).thenReturn(userAuth);
 		
@@ -312,9 +333,9 @@ class TareaServiceImplTest {
 		// Assert
 		assertTrue(ex.getMessage().toLowerCase().contains("no tienes permisos para gestionar tareas en este proyecto"));
 
-		verify(prioridadDao).findById(dto.getId_prioridad());
+		verify(catalogoService).findPrioridadTareaById(dto.getId_prioridad());
 
-		verify(tareaStatusDao).findById(dto.getId_tarea_status());
+		verify(catalogoService).findTareaStatusById(dto.getId_tarea_status());
 				
 		verify(usuarioService).findByUserId(userAuthId);
 		
@@ -386,8 +407,8 @@ class TareaServiceImplTest {
 				.withTitulo(dto.getTitulo()).withDescripcion(dto.getDescripcion()).withPrioridadTarea(prioridad)
 				.withTareaStatus(status).withProject(null).build();
 
-		when(prioridadDao.findById(dto.getId_prioridad())).thenReturn(Optional.of(prioridad));
-		when(tareaStatusDao.findById((short) 1)).thenReturn(Optional.of(status));
+		when(catalogoService.findPrioridadTareaById(dto.getId_prioridad())).thenReturn(Optional.of(prioridad));
+		when(catalogoService.findTareaStatusById((short) 1)).thenReturn(Optional.of(status));
 		when(usuarioService.findByUserId(userAuthId)).thenReturn(user);
 		when(projectService.findByProjectId(null)).thenReturn(Optional.empty());
 		when(tareaDao.saveAndFlush(any(Tarea.class))).thenAnswer(inv -> {
@@ -462,8 +483,8 @@ class TareaServiceImplTest {
 		
 		
 
-		when(prioridadDao.findById(dto.getId_prioridad())).thenReturn(Optional.of(prioridad));
-		when(tareaStatusDao.findById( dto.getId_tarea_status()) ).thenReturn(Optional.of(status));
+		when(catalogoService.findPrioridadTareaById(dto.getId_prioridad())).thenReturn(Optional.of(prioridad));
+		when(catalogoService.findTareaStatusById( dto.getId_tarea_status()) ).thenReturn(Optional.of(status));
 		
 		when(tareaDao.findById(dto.getIdGuid(), userAuthId)).thenReturn(Optional.of(tarea));
 		
@@ -556,8 +577,8 @@ class TareaServiceImplTest {
 
 		Usuario user = new UsuarioTestDataBuilder().withId(userAuthId).build();
 
-		when(prioridadDao.findById(dto.getId_prioridad())).thenReturn(Optional.of(prioridad));
-		when(tareaStatusDao.findById(dto.getId_tarea_status())).thenReturn(Optional.of(status));
+		when(catalogoService.findPrioridadTareaById(dto.getId_prioridad())).thenReturn(Optional.of(prioridad));
+		when(catalogoService.findTareaStatusById(dto.getId_tarea_status())).thenReturn(Optional.of(status));
 
 		when(usuarioService.findByUserId(userAuthId)).thenReturn(user);
 		when(projectService.findByProjectId(projectId)).thenReturn(Optional.of(project));
@@ -620,9 +641,9 @@ class TareaServiceImplTest {
 
 		Usuario tareaOwner = tarea.getOwner();
 
-		when(prioridadDao.findById(tareaDto.getId_prioridad())).thenReturn(Optional.of(prioridad));
+		when(catalogoService.findPrioridadTareaById(tareaDto.getId_prioridad())).thenReturn(Optional.of(prioridad));
 
-		when(tareaStatusDao.findById(tareaDto.getId_tarea_status())).thenReturn(Optional.of(tareaStatus));
+		when(catalogoService.findTareaStatusById(tareaDto.getId_tarea_status())).thenReturn(Optional.of(tareaStatus));
 
 		when(tareaDao.findById(tareaDto.getIdGuid(), userAuthId)).thenReturn(Optional.of(tarea));
 
@@ -702,5 +723,108 @@ class TareaServiceImplTest {
 		verify(projectMemberService).canEditTasks(eq(userAuthId), eq(project.getIdGuid()));
 
 	}
+	
+	@Test
+	void getAllActives_debeRetornarPaginaDtos_yMapearCorrectamente_cuandoHayFiltros() {
+	    // 1. Arrange 
+	    int pagina = 0;
+	    int tamanio = 10;
+	    String sorts = "fechaLimite,desc;"; //
+	    
+	    List<Short> statusIds = List.of((short) 1, (short) 2);
+	    List<Short> prioridadIds = List.of((short) 3);
+	    
+	    LocalDate fechaDesde = LocalDate.now();
+	    LocalDate fechaHasta = LocalDate.now().plusDays(5);
+	    Long ownerId = 10L;
+
+	   
+	    Tarea tarea = new TareaTestDataBuilder().build();
+	    List<Tarea> listaTareas = List.of(tarea);
+
+	    
+	    Page<Tarea> pageEntities = new PageImpl<>(listaTareas);
+
+	    
+	    when(tareaDao.getAllActives(
+	            any(Pageable.class), 
+	            eq(statusIds), 
+	            eq(prioridadIds), 
+	            eq(fechaDesde), 
+	            eq(fechaHasta), 
+	            anyString(), // busquedaDesc
+	            anyString(), // busquedaTitulo
+	            eq(true),    // aplicarPrioridad (esperamos true porque la lista no es vacía)
+	            eq(true),    // aplicarTareaStatus (esperamos true)
+	            eq(ownerId)
+	    )).thenReturn(pageEntities);
+
+	    // 2. Act 
+	    Page<TareaDto> result = tareaService.getAllActives(
+	            pagina, tamanio, statusIds, prioridadIds, 
+	            fechaDesde, fechaHasta, "desc", "titulo", sorts, ownerId
+	    );
+
+	    // 3. Assert 
+	    assertNotNull(result);
+	    assertEquals(1, result.getTotalElements()); 
+	    
+	   
+	    TareaDto dtoResultado = result.getContent().get(0);
+	    assertEquals(tarea.getIdGuid(), dtoResultado.getIdGuid());
+
+	    
+	    ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+	    
+	    verify(tareaDao).getAllActives(
+	            pageableCaptor.capture(),
+	            eq(statusIds),
+	            eq(prioridadIds),
+	            any(), any(), any(), any(),
+	            eq(true), eq(true), eq(ownerId)
+	    );
+	    
+	 
+	    	 
+	    
+	    assertEquals(pagina, pageableCaptor.getValue().getPageNumber());
+	    assertEquals(tamanio, pageableCaptor.getValue().getPageSize());
+	    assertEquals(1, pageableCaptor.getValue().getSort().toList().size());
+	}
+	
+	
+	@Test
+	void getAllActives_debeLanzarIllegalArgumentException_cuandoSortsSeaInvalido() {
+	    // 1. Arrange 
+	    int pagina = 0;
+	    int tamanio = 10;
+	    String sorts = "ordenamiento_invalido"; //
+	    
+	    List<Short> statusIds = List.of((short) 1, (short) 2);
+	    List<Short> prioridadIds = List.of((short) 3);
+	    
+	    LocalDate fechaDesde = LocalDate.now();
+	    LocalDate fechaHasta = LocalDate.now().plusDays(5);
+	    Long ownerId = 10L;
+
+
+
+	    // 2. Act 
+	    IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> tareaService.getAllActives(
+	            pagina, tamanio, statusIds, prioridadIds, 
+	            fechaDesde, fechaHasta, "desc", "titulo", sorts, ownerId
+	    ));
+	    
+	    
+	    // Asserts
+	    assertTrue(ex.getMessage().toLowerCase().contains("formato invalido"));
+	    
+	    
+	    verify(tareaDao,never()).getAllActives(any(Pageable.class), anyList(), anyList(), any(), any(), anyString(), anyString(), anyBoolean(), anyBoolean(), anyLong());
+
+
+	}
+	
+
 
 }

@@ -24,9 +24,6 @@ public interface IProjectService {
 
 	void deleteProject(String projectId, Long userId);
 
-	int getProjectCountRoleOwner(Long userId);
-	
-	int getProjectCountActive(Long userId);
 	
 	public Map<Short, String> getAllStatuses();
 	

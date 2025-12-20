@@ -1,7 +1,5 @@
 package com.springboot.app.models.services;
 
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -13,28 +11,17 @@ import com.springboot.app.models.entities.Usuario;
 @Service
 public class DashboardServiceImpl implements IDashboardService {
 
-	private final ITareaService tareaService;
-	
-	private final IProjectService projectService;
+	private final StatsService statsService;
 	
 	private final IUsuarioService usuarioService;
 	
-	
 
 
-
-
-	public DashboardServiceImpl(ITareaService tareaService, IProjectService projectService,
-			IUsuarioService usuarioService) {
+	public DashboardServiceImpl(StatsService statsService, IUsuarioService usuarioService) {
 		super();
-		this.tareaService = tareaService;
-		this.projectService = projectService;
+		this.statsService = statsService;
 		this.usuarioService = usuarioService;
 	}
-
-
-
-
 
 
 	@Override
@@ -43,14 +30,14 @@ public class DashboardServiceImpl implements IDashboardService {
 		Usuario user = usuarioService.findByUserId(userId);
 		
 		
-		Map<String,Integer> mapCountersTareaStatus = tareaService.countTareasByTareaStatus(userId).stream()
+		Map<String,Integer> mapCountersTareaStatus = statsService.countTareasByTareaStatus(userId).stream()
 	            .collect(Collectors.toMap(
 	                n -> (String) n[0], 
 	                n -> ((Number) n[1]).intValue() 
 	            ));
 
 	   
-	    Map<String,Integer> mapCountersTareaPrioridad = tareaService.countTareasByPrioridad(userId).stream()
+	    Map<String,Integer> mapCountersTareaPrioridad = statsService.countTareasByPrioridad(userId).stream()
 	            .collect(Collectors.toMap(
 	                n -> (String) n[0], 
 	                n -> ((Number) n[1]).intValue()
@@ -60,11 +47,11 @@ public class DashboardServiceImpl implements IDashboardService {
 		DashboardDto dto = DashboardDto.builder()
 				.username(user.getUsername())
 				.usuarioId(userId)
-				.proyectosComoOwner(projectService.getProjectCountRoleOwner(userId))
-				.proyectosTotalActivos(projectService.getProjectCountActive(userId))
-				.tareasParaHoy(tareaService.getTareasHoyCountByUserId(userId))
-				.tareasPendientes(tareaService.getTareasPendientesCountByUserId(userId))
-				.tareasVencidas(tareaService.getTareasVencidasCountByUserId(userId))
+				.proyectosComoOwner(statsService.getProjectCountRoleOwner(userId))
+				.proyectosTotalActivos(statsService.getProjectCountActive(userId))
+				.tareasParaHoy(statsService.getTareasHoyCountByUserId(userId))
+				.tareasPendientes(statsService.getTareasPendientesCountByUserId(userId))
+				.tareasVencidas(statsService.getTareasVencidasCountByUserId(userId))
 				.tareasPorEstatus(mapCountersTareaStatus)
 				.tareasPorPrioridad(mapCountersTareaPrioridad)
 				.build();

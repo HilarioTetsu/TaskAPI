@@ -20,7 +20,9 @@ import org.springframework.web.bind.annotation.RestController;
 import com.springboot.app.models.dtos.PrioridadTareaDto;
 import com.springboot.app.models.dtos.TareaDto;
 import com.springboot.app.models.dtos.TareaStatusDto;
+import com.springboot.app.models.services.CatalogoService;
 import com.springboot.app.models.services.ITareaService;
+import com.springboot.app.models.services.ITareaTagsService;
 import com.springboot.app.utils.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -38,9 +40,19 @@ import jakarta.validation.Valid;
 public class TareaController {
 
 	private final ITareaService tareaService;
+	
+	private final ITareaTagsService tareaTagsService;
+	
+	private final CatalogoService catalogoService;
 
-	public TareaController(ITareaService tareaService) {
+
+
+	public TareaController(ITareaService tareaService, ITareaTagsService tareaTagsService,
+			CatalogoService catalogoService) {
+		super();
 		this.tareaService = tareaService;
+		this.tareaTagsService = tareaTagsService;
+		this.catalogoService = catalogoService;
 	}
 
 	@Operation(summary = "Buscar tareas del usuario con filtros avanzados", description = """
@@ -96,7 +108,7 @@ public class TareaController {
 	@GetMapping("/prioridades")
 	public ResponseEntity<List<PrioridadTareaDto>> getPrioridadesTarea() {
 
-		return ResponseEntity.ok().body(tareaService.findAllPrioridadesTarea());
+		return ResponseEntity.ok().body(catalogoService.findAllPrioridadesTarea());
 
 	}
 
@@ -106,7 +118,7 @@ public class TareaController {
 	@GetMapping("/tarea-status")
 	public ResponseEntity<List<TareaStatusDto>> getTareaStatus() {
 
-		return ResponseEntity.ok().body(tareaService.findAllTareaStatus());
+		return ResponseEntity.ok().body(catalogoService.findAllTareaStatus());
 
 	}
 
@@ -149,7 +161,7 @@ public class TareaController {
 	public ResponseEntity<Void> asignarTag(@PathVariable(required = true) String idTarea,
 			@PathVariable(required = true) Integer idTag, @AuthenticationPrincipal CustomUserDetails authUser) {
 
-		tareaService.asignarTag(idTarea, idTag, authUser.getUserId());
+		tareaTagsService.asignarTag(idTarea, idTag, authUser.getUserId());
 
 		return ResponseEntity.noContent().build();
 
@@ -163,7 +175,7 @@ public class TareaController {
 	public ResponseEntity<?> removerTag(@PathVariable(required = true) String idTarea,
 			@PathVariable(required = true) Integer idTag, @AuthenticationPrincipal CustomUserDetails authUser) {
 
-		tareaService.quitarTag(idTarea, idTag, authUser.getUserId());
+		tareaTagsService.quitarTag(idTarea, idTag, authUser.getUserId());
 
 		return ResponseEntity.noContent().build();
 

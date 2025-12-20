@@ -9,7 +9,6 @@ import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,7 +27,7 @@ import com.springboot.app.utils.Utils;
 import io.jsonwebtoken.lang.Strings;
 
 @Service
-public class IInvitationServiceImpl implements IInvitationService {
+public class InvitationServiceImpl implements IInvitationService {
 
 	private final IInvitationDao invitationDao;
 	private final IUsuarioService usuarioService;
@@ -37,7 +36,7 @@ public class IInvitationServiceImpl implements IInvitationService {
 	
 
 
-	public IInvitationServiceImpl(IInvitationDao invitationDao, IUsuarioService usuarioService,
+	public InvitationServiceImpl(IInvitationDao invitationDao, IUsuarioService usuarioService,
 			IProjectService projectService, IProjectMemberService projectMemberService) {
 		super();
 		this.invitationDao = invitationDao;

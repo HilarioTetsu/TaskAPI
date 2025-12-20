@@ -1,7 +1,6 @@
 package com.springboot.app.models.services;
 
 import java.time.LocalDate;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -9,30 +8,22 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.springboot.app.models.dao.ICommentDao;
-import com.springboot.app.models.dao.IPrioridadTareaDao;
 import com.springboot.app.models.dao.ITareaDao;
-import com.springboot.app.models.dao.ITareaStatusDao;
-import com.springboot.app.models.dao.ITareaTagsDao;
-
-import com.springboot.app.models.dtos.PrioridadTareaDto;
-import com.springboot.app.models.dtos.TagDto;
 import com.springboot.app.models.dtos.TareaDto;
-import com.springboot.app.models.dtos.TareaStatusDto;
 import com.springboot.app.models.entities.Comment;
 import com.springboot.app.models.entities.PrioridadTarea;
 import com.springboot.app.models.entities.Project;
 import com.springboot.app.models.entities.Tag;
 import com.springboot.app.models.entities.Tarea;
 import com.springboot.app.models.entities.TareaStatus;
-import com.springboot.app.models.entities.TareaTags;
 import com.springboot.app.models.entities.Usuario;
 import com.springboot.app.utils.Constants;
 import com.springboot.app.utils.TareaChangeLogHelper;
@@ -43,37 +34,32 @@ public class TareaServiceImpl implements ITareaService {
 
 	private final ITareaDao tareaDao;
 
-	private final IPrioridadTareaDao prioridadDao;
-
-	private final ITareaStatusDao tareaStatusDao;
-
-	private final ITareaTagsDao tareaTagsDao;
-
 	private final IUsuarioService usuarioService;
 
 	private final IProjectService projectService;
 
-	private final IProjectMemberService projectMemberService;
-
-	private final ITagService tagService;
+	private final IProjectMemberService projectMemberService;	
 
 	private final ICommentDao commentDao;
+	
+	private final CatalogoService catalogoService;
 
 	private final TareaChangeLogHelper tareaLogHelper;
 
-	public TareaServiceImpl(ITareaDao tareaDao, IPrioridadTareaDao prioridadDao, ITareaStatusDao tareaStatusDao,
-			ITareaTagsDao tareaTagsDao, IUsuarioService usuarioService, IProjectService projectService,
-			IProjectMemberService projectMemberService, ITagService tagService, ICommentDao commentDao,
+
+
+
+
+	public TareaServiceImpl(ITareaDao tareaDao, IUsuarioService usuarioService, IProjectService projectService,
+			IProjectMemberService projectMemberService, ICommentDao commentDao, CatalogoService catalogoService,
 			TareaChangeLogHelper tareaLogHelper) {
+		super();
 		this.tareaDao = tareaDao;
-		this.prioridadDao = prioridadDao;
-		this.tareaStatusDao = tareaStatusDao;
-		this.tareaTagsDao = tareaTagsDao;
 		this.usuarioService = usuarioService;
 		this.projectService = projectService;
 		this.projectMemberService = projectMemberService;
-		this.tagService = tagService;
 		this.commentDao = commentDao;
+		this.catalogoService = catalogoService;
 		this.tareaLogHelper = tareaLogHelper;
 	}
 
@@ -95,13 +81,13 @@ public class TareaServiceImpl implements ITareaService {
 
 		String cambiosTarea;
 
-		Optional<PrioridadTarea> prioridadTarea = prioridadDao.findById(dto.getId_prioridad());
+		Optional<PrioridadTarea> prioridadTarea = catalogoService.findPrioridadTareaById(dto.getId_prioridad());
 
 		if (prioridadTarea.isEmpty()) {
 			throw new NoSuchElementException("Prioridad no encontrada");
 		}
 
-		Optional<TareaStatus> tareaStatus = tareaStatusDao.findById(dto.getId_tarea_status());
+		Optional<TareaStatus> tareaStatus = catalogoService.findTareaStatusById(dto.getId_tarea_status());
 
 		if (tareaStatus.isEmpty())
 			throw new NoSuchElementException("Status de tarea no encontrada");
@@ -190,40 +176,6 @@ public class TareaServiceImpl implements ITareaService {
 				.map(tarea -> new TareaDto(tarea));
 	}
 
-	@Override
-	public List<TagDto> asignarTag(String tareaId, Integer tagId, Long authUserId) {
-
-		Tarea tarea = findByIdGuid(tareaId).orElseThrow(() -> new NoSuchElementException("Tarea no encontrada"));
-
-		boolean isOwnerTask = tarea.getOwner().getId() == authUserId;
-
-		boolean hasProject = tarea.getProject() != null;
-
-		boolean isOwnerProject = hasProject ? projectMemberService.isOwner(authUserId, tarea.getProject().getIdGuid())
-				: false;
-
-		if (!hasProject && !isOwnerTask) {
-			throw new AccessDeniedException("No tienes los permisos para realizar esta accion");
-		}
-
-		if (!isOwnerTask && !isOwnerProject) {
-			throw new AccessDeniedException("No tienes los permisos para realizar esta accion");
-		}
-
-		Tag tag = tagService.getTagActiveById(tagId);
-
-		if (tarea.getTareaTagsList().stream().anyMatch(x -> x.getTag().getId().equals(tag.getId()))) {
-			throw new IllegalStateException("Tag ya asociado a la tarea");
-		}
-
-		TareaTags tareaTags = new TareaTags(tarea, tag);
-
-		tareaTagsDao.saveAndFlush(tareaTags);
-
-		List<Tag> listTags = tareaDao.getTagsFromTarea(tarea.getIdGuid());
-
-		return listTags.stream().map(x -> new TagDto(x)).toList();
-	}
 
 	@Override
 	@Transactional(readOnly = true)
@@ -311,16 +263,22 @@ public class TareaServiceImpl implements ITareaService {
 
 		Tarea tarea = tareaDao.findById(tareaId).get();
 
-		if (tarea.getProject() == null && tarea.getOwner().getId() != userAuthId) {
-			throw new SecurityException("No tiene los permisos necesarios sobre esta tarea");
-		}
-
-		Project projecto = tarea.getProject();
-
-		if (!projectMemberService.canEditTasks(userAuthId, projecto.getIdGuid())) {
-			throw new SecurityException("No tiene los permisos necesarios sobre esta tarea");
-		}
-
+		if (tarea.getProject() == null) {
+			
+	        if (!tarea.getOwner().getId().equals(userAuthId)) {
+	            throw new SecurityException("No tienes permiso (Solo el dueño puede borrar tareas personales)");
+	        }
+	      
+	    } 
+	   
+	    else {
+	       
+	        if (!projectMemberService.canEditTasks(userAuthId, tarea.getProject().getIdGuid())) {
+	            throw new SecurityException("No tienes permisos de proyecto para borrar esta tarea");
+	        }
+	    }
+		
+		
 		String username = usuarioService.findUsernameById(userAuthId);
 
 		tarea.setStatus(Constants.STATUS_INACTIVE);
@@ -344,43 +302,9 @@ public class TareaServiceImpl implements ITareaService {
 		return tareaDao.findById(tareaId);
 	}
 
-	@Override
-	public List<PrioridadTareaDto> findAllPrioridadesTarea() {
 
-		return prioridadDao.findAll().stream().map(p -> new PrioridadTareaDto(p)).toList();
-	}
 
-	@Override
-	@Transactional
-	public void quitarTag(String idTarea, Integer idTag, Long authUserId) {
 
-		Tarea tarea = tareaDao.findById(idTarea).orElseThrow(() -> new NoSuchElementException("Tarea no encontrada"));
-
-		if (tarea.getOwner().getId() != authUserId
-				&& !projectMemberService.isOwner(authUserId, tarea.getProject().getIdGuid())) {
-			throw new AccessDeniedException("No tienes los permisos para realizar esta accion");
-		}
-
-		List<TareaTags> tareaTags = tarea.getTareaTagsList();
-
-		if (tareaTags == null || tareaTags.size() == 0) {
-			return;
-		}
-
-		int tareaTagId = 0;
-
-		for (TareaTags item : tareaTags) {
-
-			if (item.getTag().getId() == idTag && item.getTarea().getIdGuid().equals(idTarea)) {
-
-				tareaTagsDao.delete(item);
-
-				break;
-			}
-
-		}
-
-	}
 
 	@Override
 	@Transactional
@@ -389,39 +313,12 @@ public class TareaServiceImpl implements ITareaService {
 		return new TareaDto(tareaDao.save(tarea));
 	}
 
-	@Override
-	public List<Object[]> countTareasByPrioridad(Long userId) {
 
-		return tareaDao.countTareasByPrioridad(userId);
-	}
 
 	@Override
-	public List<Object[]> countTareasByTareaStatus(Long userId) {
-
-		return tareaDao.countTareasByTareaStatus(userId);
-	}
-
-	@Override
-	public int getTareasHoyCountByUserId(Long userId) {
-
-		return tareaDao.getTareasHoyCountByUserId(userId);
-	}
-
-	@Override
-	public int getTareasVencidasCountByUserId(Long userId) {
-
-		return tareaDao.getTareasVencidasCountByUserId(userId);
-	}
-
-	@Override
-	public int getTareasPendientesCountByUserId(Long userId) {
-
-		return tareaDao.getTareasPendientesCountByUserId(userId);
-	}
-
-	@Override
-	public List<TareaStatusDto> findAllTareaStatus() {
-		return tareaStatusDao.findAll().stream().map(ts -> new TareaStatusDto(ts)).toList();
+	public List<Tag> getTagsFromTarea(String idGuid) {
+		
+		return tareaDao.getTagsFromTarea(idGuid);
 	}
 
 }

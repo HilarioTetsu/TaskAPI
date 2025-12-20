@@ -20,23 +20,25 @@ public class Utils {
 	  
 		public static Sort parseSortParams(String sorts) {
 			
-			String[] listSorts=sorts.split(";");
+			String[] arraySorts=sorts.split(";");
 			
 			List<Sort.Order> orders= new ArrayList<>();
 			
 			
 			Sort sort = Sort.unsorted();
 			
-			if (listSorts.length==0) {
+			if (arraySorts.length==0) {
 				return sort;
 			}
 			
-			for (int i = 0; i < listSorts.length; i++) {
+			for (int i = 0; i < arraySorts.length; i++) {
 				
-				String[] parts = listSorts[i].split(",");
+				String[] parts = arraySorts[i].split(",");
 				
-				if (parts.length<2) {
-					return sort;
+				if (parts.length != 2) { 
+					
+					throw new IllegalArgumentException( "Formato invalido en parámetro de ordenamiento. Se espera 'campo,direccion;'" ); 
+					
 				}
 				
 				String campo=parts[0];
