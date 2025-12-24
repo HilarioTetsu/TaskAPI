@@ -1,11 +1,13 @@
 package com.springboot.app.testdata;
 
-import java.util.Collections;
+
+
 import java.util.List;
 
 
 import com.github.javafaker.Faker;
 import com.springboot.app.models.entities.Rol;
+import com.springboot.app.models.entities.Tarea;
 import com.springboot.app.models.entities.Usuario;
 import com.springboot.app.utils.Constants;
 
@@ -18,6 +20,7 @@ public class UsuarioTestDataBuilder {
     private String username = faker.name().username();
     private String password ="$2a$10$/WG6.DlBIoDDv5dS1fnszuCEyBHODY8zIFmzB71fqF4WfVN5JMmRS";
     private Short status = Constants.STATUS_ACTIVE;
+    private List<Tarea> tareasAsignadas = null;
 
     private List<Rol> roles = List.of(new Rol((short)1,"Basico",(short) 1,null) );
 
@@ -51,6 +54,11 @@ public class UsuarioTestDataBuilder {
         this.roles = roles;
         return this;
     }
+    
+    public UsuarioTestDataBuilder withTareasAsigandas(List<Tarea> tareas) {
+        this.tareasAsignadas = tareas;
+        return this;
+    }
 
     public Usuario build() {
         Usuario usuario = new Usuario();
@@ -61,7 +69,7 @@ public class UsuarioTestDataBuilder {
         usuario.setPassword(password);
         usuario.setStatus(status);
         usuario.setRoles(roles);
-
+        usuario.setTareasAsignadas(tareasAsignadas);
 
         return usuario;
     }

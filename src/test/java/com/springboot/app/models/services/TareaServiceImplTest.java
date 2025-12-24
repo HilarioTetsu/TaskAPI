@@ -54,6 +54,7 @@ import com.springboot.app.testdata.TareaDtoTestDataBuilder;
 import com.springboot.app.testdata.TareaStatusTestDataBuilder;
 import com.springboot.app.testdata.TareaTestDataBuilder;
 import com.springboot.app.testdata.UsuarioTestDataBuilder;
+import com.springboot.app.utils.Constants;
 import com.springboot.app.utils.TareaChangeLogHelper;
 
 @ExtendWith(MockitoExtension.class)
@@ -878,7 +879,7 @@ class TareaServiceImplTest {
 		verify(tareaDao, never()).save(any(Tarea.class));
 
 	}
-	
+
 	@Test
 	void asignarTarea_debeLanzarIllegalStateException_cuandoSeAsignanMultiplesUsuariosATareaPersonal() {
 
@@ -886,12 +887,12 @@ class TareaServiceImplTest {
 
 		Long authUserId = 10L;
 
-		List<Long> userIds = List.of(authUserId,faker.number().numberBetween(1, Long.MAX_VALUE));
+		List<Long> userIds = List.of(authUserId, faker.number().numberBetween(1, Long.MAX_VALUE));
 
 		String tareaId = UUID.randomUUID().toString();
-		
+
 		Usuario authUser = new UsuarioTestDataBuilder().withId(authUserId).build();
-		
+
 		Tarea tarea = new TareaTestDataBuilder().withProject(null).withId(tareaId).withOwner(authUser).build();
 
 		when(tareaDao.findById(tareaId)).thenReturn(Optional.of(tarea));
@@ -908,7 +909,7 @@ class TareaServiceImplTest {
 		verify(tareaDao, never()).save(any(Tarea.class));
 
 	}
-	
+
 	@Test
 	void asignarTarea_debeLanzarSecurityException_cuandoSeAsignaUnaTareaPersonalAUnUsuarioNoDuenioDeLaTarea() {
 
@@ -919,8 +920,7 @@ class TareaServiceImplTest {
 		List<Long> userIds = List.of(authUserId);
 
 		String tareaId = UUID.randomUUID().toString();
-				
-		
+
 		Tarea tarea = new TareaTestDataBuilder().withProject(null).withId(tareaId).build();
 
 		when(tareaDao.findById(tareaId)).thenReturn(Optional.of(tarea));
@@ -937,7 +937,7 @@ class TareaServiceImplTest {
 		verify(tareaDao, never()).save(any(Tarea.class));
 
 	}
-	
+
 	@Test
 	void asignarTarea_debeLanzarSecurityException_cuandoNoEresDueñoDelProyecto() {
 
@@ -948,7 +948,7 @@ class TareaServiceImplTest {
 		List<Long> userIds = List.of(authUserId);
 
 		String tareaId = UUID.randomUUID().toString();
-						
+
 		Tarea tarea = new TareaTestDataBuilder().withId(tareaId).build();
 
 		when(tareaDao.findById(tareaId)).thenReturn(Optional.of(tarea));
@@ -962,13 +962,63 @@ class TareaServiceImplTest {
 		// Arrange
 
 		assertTrue(ex.getMessage().toLowerCase().contains("no tienes los permisos necesarios"));
-		
+
 		verify(projectMemberService).isOwner(eq(authUserId), eq(tarea.getProject().getIdGuid()));
-		
+
 		verify(tareaDao, never()).save(any(Tarea.class));
 
 	}
-	
+
+	@Test
+	void getTareasAsignadasByProjectId_debeLanzarNoSuchElementException_cuandoProyectoNoExiste() {
+
+		// Arrange
+
+		Long authUserId = 10L;
+
+		String projectId = UUID.randomUUID().toString();
+
+		when(projectService.existsProjectActive(projectId)).thenReturn(false);
+
+		// Act
+		NoSuchElementException ex = assertThrows(NoSuchElementException.class,
+				() -> tareaService.getTareasAsignadasByProjectId(projectId, authUserId));
+
+		// Arrange
+
+		assertTrue(ex.getMessage().toLowerCase().contains("proyecto inexistente"));
+
+		verify(projectMemberService, never()).isMember(anyLong(), anyString());
+
+		verify(usuarioService, never()).findByUserId(anyLong());
+
+	}
+
+	@Test
+	void getTareasAsignadasByProjectId_debeLanzarSecurityException_cuandoNoFormasParteDelProyecto() {
+
+		// Arrange
+
+		Long authUserId = 10L;
+
+		String projectId = UUID.randomUUID().toString();
+
+		when(projectService.existsProjectActive(projectId)).thenReturn(true);
+
+		when(projectMemberService.isMember(authUserId, projectId)).thenReturn(false);
+
+		// Act
+		SecurityException ex = assertThrows(SecurityException.class,
+				() -> tareaService.getTareasAsignadasByProjectId(projectId, authUserId));
+
+		// Arrange
+
+		assertTrue(ex.getMessage().toLowerCase().contains("no tiene los permisos necesarios en este proyecto"));
+
+		verify(usuarioService, never()).findByUserId(anyLong());
+
+	}
+
 	@Test
 	void getTareasAsignadasByProjectId_debeRetornarTareas_cuandoUsuarioTieneTareasAsignadas() {
 
@@ -976,23 +1026,259 @@ class TareaServiceImplTest {
 
 		Long authUserId = 10L;
 
-		String projectId=UUID.randomUUID().toString();
-		
-		when(projectService.existsProjectActive(projectId)).thenReturn(false);
+		String projectId = UUID.randomUUID().toString();
+
+		Project project = new ProjectTestDataBuilder().withIdGuid(projectId).build();
+
+		Tarea tarea1 = new TareaTestDataBuilder().withProject(project).build();
+
+		Tarea tarea2 = new TareaTestDataBuilder().withProject(project).build();
+
+		Tarea tarea3 = new TareaTestDataBuilder().withProject(null).build();
+
+		List<Tarea> tareasAsignadas = List.of(tarea1, tarea2, tarea3);
+
+		Usuario authUser = new UsuarioTestDataBuilder().withId(authUserId).withTareasAsigandas(tareasAsignadas).build();
+
+		when(projectService.existsProjectActive(projectId)).thenReturn(true);
+
+		when(projectMemberService.isMember(authUserId, projectId)).thenReturn(true);
+
+		when(usuarioService.findByUserId(authUserId)).thenReturn(authUser);
 
 		// Act
-		NoSuchElementException ex = assertThrows(NoSuchElementException.class,
-				() -> tareaService.getTareasAsignadasByProjectId(projectId, authUserId));
-		
+		List<TareaDto> result = tareaService.getTareasAsignadasByProjectId(projectId, authUserId);
 
 		// Arrange
-		
-		assertTrue(ex.getMessage().toLowerCase().contains("proyecto inexistente"));
-		
-		verify(projectMemberService,never()).isMember(anyLong(), anyString());
-		
-		verify(usuarioService,never()).findByUserId(anyLong());
 
+		assertNotNull(result);
+		assertEquals(2, result.size());
+		assertTrue(result.stream().map(dto -> dto.getIdGuid()).toList()
+				.containsAll(List.of(tarea1.getIdGuid(), tarea2.getIdGuid())));
+		assertTrue(result.stream().allMatch(dto -> dto.getProject_id().equals(projectId)));
+
+		verify(projectService).existsProjectActive(projectId);
+		verify(projectMemberService).isMember(eq(authUserId), eq(projectId));
+		verify(usuarioService).findByUserId(authUserId);
+
+	}
+
+	@Test
+	void getTareasAsignadasByProjectId_debeRetornarVacio_cuandoUsuarioNoTieneTareasAsignadasAEseProyecto() {
+
+		// Arrange
+
+		Long authUserId = faker.number().numberBetween(1, Long.MAX_VALUE);
+
+		String projectId = UUID.randomUUID().toString();
+
+		Project project2 = new ProjectTestDataBuilder().build();
+
+		Tarea tarea1 = new TareaTestDataBuilder().withProject(project2).build();
+
+		Tarea tarea2 = new TareaTestDataBuilder().withProject(null).build();
+
+		List<Tarea> tareasAsignadas = List.of(tarea1, tarea2);
+
+		Usuario authUser = new UsuarioTestDataBuilder().withId(authUserId).withTareasAsigandas(tareasAsignadas).build();
+
+		when(projectService.existsProjectActive(projectId)).thenReturn(true);
+
+		when(projectMemberService.isMember(authUserId, projectId)).thenReturn(true);
+
+		when(usuarioService.findByUserId(authUserId)).thenReturn(authUser);
+
+		// Act
+		List<TareaDto> result = tareaService.getTareasAsignadasByProjectId(projectId, authUserId);
+
+		// Arrange
+
+		assertNotNull(result);
+		assertEquals(0, result.size());
+
+		verify(projectService).existsProjectActive(projectId);
+		verify(projectMemberService).isMember(eq(authUserId), eq(projectId));
+		verify(usuarioService).findByUserId(authUserId);
+
+	}
+
+	@Test
+	void deleteTarea_debeLanzarNoSuchElementException_cuandoTareaNoExista() {
+		// Arrange
+		String tareaId = UUID.randomUUID().toString();
+
+		Long authUserId = faker.number().numberBetween(1, Long.MAX_VALUE);
+
+		when(tareaDao.existsById(tareaId)).thenReturn(false);
+
+		// Act
+
+		NoSuchElementException ex = assertThrows(NoSuchElementException.class,
+				() -> tareaService.deleteTarea(tareaId, authUserId));
+
+		// Assert
+
+		assertTrue(ex.getMessage().toLowerCase().contains("tarea inexistente"));
+
+		verify(tareaDao, never()).findById(tareaId);
+
+		verify(tareaDao, never()).save(any(Tarea.class));
+
+	}
+
+	@Test
+	void deleteTarea_debeLanzarSecurityException_cuandoNoEresDuenioDeTareaPersonal() {
+		// Arrange
+		String tareaId = UUID.randomUUID().toString();
+
+		Long authUserId = faker.number().numberBetween(1, Long.MAX_VALUE);
+
+		Tarea tarea = new TareaTestDataBuilder().withId(tareaId).withProject(null).build();
+
+		when(tareaDao.existsById(tareaId)).thenReturn(true);
+
+		when(tareaDao.findById(tareaId)).thenReturn(Optional.of(tarea));
+
+		// Act
+
+		SecurityException ex = assertThrows(SecurityException.class,
+				() -> tareaService.deleteTarea(tareaId, authUserId));
+
+		// Assert
+
+		assertTrue(ex.getMessage().toLowerCase().contains("no tienes permiso"));
+
+		verify(usuarioService, never()).findUsernameById(authUserId);
+		verify(tareaDao, never()).save(any(Tarea.class));
+
+	}
+
+	@Test
+	void deleteTarea_debeLanzarSecurityException_cuandoNoTienesPermitidoEditarTareasDelProyecto() {
+		// Arrange
+		String tareaId = UUID.randomUUID().toString();
+
+		Long authUserId = faker.number().numberBetween(1, Long.MAX_VALUE);
+
+		Tarea tarea = new TareaTestDataBuilder().withId(tareaId).build();
+
+		when(tareaDao.existsById(tareaId)).thenReturn(true);
+
+		when(tareaDao.findById(tareaId)).thenReturn(Optional.of(tarea));
+
+		when(projectMemberService.canEditTasks(authUserId, tarea.getProject().getIdGuid())).thenReturn(false);
+
+		// Act
+
+		SecurityException ex = assertThrows(SecurityException.class,
+				() -> tareaService.deleteTarea(tareaId, authUserId));
+
+		// Assert
+
+		assertTrue(ex.getMessage().toLowerCase().contains("no tienes permisos de proyecto"));
+
+		verify(usuarioService, never()).findUsernameById(authUserId);
+		verify(tareaDao, never()).save(any(Tarea.class));
+
+	}
+
+	@Test
+	void deleteTarea_debeBorrarTarea_cuandoEstaAsignadaAUnProyecto() {
+		// Arrange
+		String tareaId = UUID.randomUUID().toString();
+
+		Long authUserId = faker.number().numberBetween(1, Long.MAX_VALUE);
+
+		Usuario authUser = new UsuarioTestDataBuilder().withId(authUserId).build();
+
+		Usuario userAsignado2 = new UsuarioTestDataBuilder().build();
+
+		Tarea tarea = new TareaTestDataBuilder().withId(tareaId).withUsuarios(List.of(authUser, userAsignado2)).build();
+
+		when(tareaDao.existsById(tareaId)).thenReturn(true);
+
+		when(tareaDao.findById(tareaId)).thenReturn(Optional.of(tarea));
+
+		when(projectMemberService.canEditTasks(authUserId, tarea.getProject().getIdGuid())).thenReturn(true);
+
+		when(usuarioService.findUsernameById(authUserId)).thenReturn(authUser.getUsername());
+
+		when(tareaDao.save(any(Tarea.class))).thenAnswer(inv -> inv.getArgument(0));
+
+		ArgumentCaptor<Tarea> tareaCaptor = ArgumentCaptor.forClass(Tarea.class);
+
+		// Act
+
+		tareaService.deleteTarea(tareaId, authUserId);
+
+		// Assert
+
+		verify(tareaDao).save(tareaCaptor.capture());
+
+		Tarea result = tareaCaptor.getValue();
+
+		assertNotNull(result);
+		assertEquals(tareaId, result.getIdGuid());
+		assertNotNull(result.getProject());
+		assertEquals(Constants.STATUS_INACTIVE, result.getStatus());
+		assertEquals(authUser.getUsername(), result.getUsuarioModificacion());
+		assertNull(result.getUsuarios());
+
+		verify(tareaDao).existsById(tareaId);
+		verify(tareaDao).findById(tareaId);
+
+		verify(projectMemberService).canEditTasks(eq(authUserId), eq(tarea.getProject().getIdGuid()));
+
+		verify(usuarioService).findUsernameById(authUserId);
+
+	}
+
+	@Test
+	void deleteTarea_debeBorrarTarea_cuandoEsTareaPersonal() {
+		// Arrange
+		String tareaId = UUID.randomUUID().toString();
+
+		Long authUserId = faker.number().numberBetween(1, Long.MAX_VALUE);
+
+		Usuario authUser = new UsuarioTestDataBuilder().withId(authUserId).build();
+
+		Tarea tarea = new TareaTestDataBuilder().withId(tareaId).withProject(null).withUsuarios(List.of(authUser))
+				.withOwner(authUser)
+				.build();
+
+		when(tareaDao.existsById(tareaId)).thenReturn(true);
+
+		when(tareaDao.findById(tareaId)).thenReturn(Optional.of(tarea));
+		
+		when(usuarioService.findUsernameById(authUserId)).thenReturn(authUser.getUsername());
+
+		when(tareaDao.save(any(Tarea.class))).thenAnswer(inv -> inv.getArgument(0));
+
+		ArgumentCaptor<Tarea> tareaCaptor = ArgumentCaptor.forClass(Tarea.class);
+
+		// Act
+
+		tareaService.deleteTarea(tareaId, authUserId);
+
+		// Assert
+
+		verify(tareaDao).save(tareaCaptor.capture());
+
+		Tarea result = tareaCaptor.getValue();
+
+		assertNotNull(result);
+		assertEquals(tareaId, result.getIdGuid());
+		assertNull(result.getProject());
+		assertEquals(Constants.STATUS_INACTIVE, result.getStatus());
+		assertEquals(authUser.getUsername(), result.getUsuarioModificacion());
+		assertNull(result.getUsuarios());
+
+		verify(tareaDao).existsById(tareaId);
+		verify(tareaDao).findById(tareaId);
+
+		verify(projectMemberService,never()).canEditTasks(anyLong(), anyString());
+
+		verify(usuarioService).findUsernameById(authUserId);
 
 	}
 

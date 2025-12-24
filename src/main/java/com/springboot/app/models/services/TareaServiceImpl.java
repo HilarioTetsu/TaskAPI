@@ -249,7 +249,7 @@ public class TareaServiceImpl implements ITareaService {
 
 		Usuario user = usuarioService.findByUserId(authUserId);
 
-		return user.getTareasAsignadas().stream().filter(t -> t.getProject().getIdGuid().equals(projectId))
+		return user.getTareasAsignadas().stream().filter(t -> t.getProject() != null && t.getProject().getIdGuid().equals(projectId))
 				.map(t -> new TareaDto(t)).toList();
 	}
 
@@ -269,9 +269,7 @@ public class TareaServiceImpl implements ITareaService {
 	            throw new SecurityException("No tienes permiso (Solo el dueño puede borrar tareas personales)");
 	        }
 	      
-	    } 
-	   
-	    else {
+	    } else {
 	       
 	        if (!projectMemberService.canEditTasks(userAuthId, tarea.getProject().getIdGuid())) {
 	            throw new SecurityException("No tienes permisos de proyecto para borrar esta tarea");
@@ -300,17 +298,6 @@ public class TareaServiceImpl implements ITareaService {
 	public Optional<Tarea> findByIdGuid(String tareaId) {
 
 		return tareaDao.findById(tareaId);
-	}
-
-
-
-
-
-	@Override
-	@Transactional
-	public TareaDto save(Tarea tarea) {
-
-		return new TareaDto(tareaDao.save(tarea));
 	}
 
 

@@ -32,7 +32,6 @@ public interface ITareaService {
 
 	Optional<Tarea> findByIdGuid(String tareaId);
 	
-	TareaDto save(Tarea tarea);
 	
 	List<Tag> getTagsFromTarea(String idGuid);
 	
