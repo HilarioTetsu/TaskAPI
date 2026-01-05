@@ -45,11 +45,13 @@ import com.springboot.app.models.dtos.TareaDto;
 import com.springboot.app.models.entities.Comment;
 import com.springboot.app.models.entities.PrioridadTarea;
 import com.springboot.app.models.entities.Project;
+import com.springboot.app.models.entities.Tag;
 import com.springboot.app.models.entities.Tarea;
 import com.springboot.app.models.entities.TareaStatus;
 import com.springboot.app.models.entities.Usuario;
 import com.springboot.app.testdata.PrioridadTareaTestDataBuilder;
 import com.springboot.app.testdata.ProjectTestDataBuilder;
+import com.springboot.app.testdata.TagTestDataBuilder;
 import com.springboot.app.testdata.TareaDtoTestDataBuilder;
 import com.springboot.app.testdata.TareaStatusTestDataBuilder;
 import com.springboot.app.testdata.TareaTestDataBuilder;
@@ -1280,6 +1282,146 @@ class TareaServiceImplTest {
 
 		verify(usuarioService).findUsernameById(authUserId);
 
+	}
+	
+	@Test
+	void isAsignedToThisTask_debeRetornarTrue_cuandoLaTareaEstaAsignadaAlUsuario() {
+		
+		//Arrange
+		
+		String tareaId=UUID.randomUUID().toString();
+		
+		Long userId = faker.number().numberBetween(1, Long.MAX_VALUE);
+		
+		when(tareaDao.isAsignedToThisTask(tareaId, userId)).thenReturn(1);
+		
+		//Act
+		
+		boolean result = tareaService.isAsignedToThisTask(tareaId, userId);
+		
+		assertTrue(result);
+		
+		verify(tareaDao).isAsignedToThisTask(tareaId, userId);
+	}
+	
+	@Test
+	void isAsignedToThisTask_debeRetornarFalse_cuandoLaTareaNoEstaAsignadaAlUsuario() {
+		
+		//Arrange
+		
+		String tareaId=UUID.randomUUID().toString();
+		
+		Long userId = faker.number().numberBetween(1, Long.MAX_VALUE);
+		
+		when(tareaDao.isAsignedToThisTask(tareaId, userId)).thenReturn(0);
+		
+		//Act
+		
+		
+		boolean result = tareaService.isAsignedToThisTask(tareaId, userId);
+		
+		assertFalse(result);
+		
+		verify(tareaDao).isAsignedToThisTask(tareaId, userId);
+	}
+	
+	@Test
+	void findByIdGuid_debeRetornarTarea_cuandoTareaExista() {
+		
+		//Arrange
+		String tareaId = UUID.randomUUID().toString();
+		
+		Tarea tarea = new TareaTestDataBuilder().withId(tareaId).build();
+		
+		when(tareaDao.findById(tareaId)).thenReturn(Optional.of(tarea));
+		
+		//Act
+		
+		Optional<Tarea> result = tareaService.findByIdGuid(tareaId);
+		
+		//Assert
+		
+		assertTrue(result.isPresent());
+		assertEquals(tareaId, result.get().getIdGuid());
+		
+		verify(tareaDao).findById(tareaId);
+		
+		
+	}
+	
+	@Test
+	void findByIdGuid_debeRetornarVacio_cuandoTareaNoExista() {
+		
+		//Arrange
+		String tareaId = UUID.randomUUID().toString();
+		
+		
+		
+		when(tareaDao.findById(tareaId)).thenReturn(Optional.empty());
+		
+		//Act
+		
+		Optional<Tarea> result = tareaService.findByIdGuid(tareaId);
+		
+		//Assert
+		
+		assertTrue(result.isEmpty());		
+		
+		verify(tareaDao).findById(tareaId);
+		
+		
+	}
+	
+	@Test
+	void getTagsFromTarea_debeRetornarTags_cuandoTareaTengaTagsAsignados() {
+		
+		//Arrange
+		
+		String tareaId = UUID.randomUUID().toString();
+		
+		Tag tag1= new TagTestDataBuilder().build();
+		
+		Tag tag2= new TagTestDataBuilder().build();
+		
+		Tag tag3= new TagTestDataBuilder().build();
+		
+		List<Tag> listTag = List.of(tag1,tag2,tag3);
+		
+		when(tareaDao.getTagsFromTarea(tareaId)).thenReturn(listTag);
+		
+		//Act
+		
+		List<Tag> result = tareaService.getTagsFromTarea(tareaId);
+		
+		//Assert
+		
+		assertNotNull(result);
+		assertEquals(3,result.size());
+		
+		verify(tareaDao).getTagsFromTarea(tareaId);
+	}
+	
+	@Test
+	void getTagsFromTarea_debeRetornarVacio_cuandoNoHayTagsAsignados() {
+		
+		//Arrange
+		
+		String tareaId = UUID.randomUUID().toString();
+				
+		List<Tag> listTag = List.of();
+		
+		when(tareaDao.getTagsFromTarea(tareaId)).thenReturn(listTag);
+		
+		//Act
+		
+		List<Tag> result = tareaService.getTagsFromTarea(tareaId);
+		
+		//Assert
+		
+		assertNotNull(result);
+		assertEquals(0,result.size());
+		
+		verify(tareaDao).getTagsFromTarea(tareaId);
 	}
 
 }

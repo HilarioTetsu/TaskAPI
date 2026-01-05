@@ -11,6 +11,7 @@ import com.springboot.app.models.entities.PrioridadTarea;
 import com.springboot.app.models.entities.Project;
 import com.springboot.app.models.entities.Tarea;
 import com.springboot.app.models.entities.TareaStatus;
+import com.springboot.app.models.entities.TareaTags;
 import com.springboot.app.models.entities.Usuario;
 import com.springboot.app.utils.Constants;
 
@@ -34,6 +35,8 @@ public class TareaTestDataBuilder {
     private Project project = new ProjectTestDataBuilder().build();
     
     private List<Usuario> usuarios = null;
+    
+    private List<TareaTags> tareaTagsList=null;
     
     Date futureDate = faker.date().future(30, java.util.concurrent.TimeUnit.DAYS);
     
@@ -79,6 +82,10 @@ public class TareaTestDataBuilder {
         return this;
     }
     
+    public TareaTestDataBuilder withTareaTagsList(List<TareaTags> list) {
+        this.tareaTagsList = list;
+        return this;
+    }
     
     public Tarea build() {
         Tarea tarea = new Tarea();
@@ -94,7 +101,7 @@ public class TareaTestDataBuilder {
         tarea.setStatus(Constants.STATUS_ACTIVE);
         tarea.setFechaLimite(fechaLimite);
         tarea.setFechaCreacion(LocalDateTime.now());
-        
+        tarea.setTareaTagsList(tareaTagsList);
         
         return tarea;
     }
