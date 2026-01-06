@@ -1,7 +1,9 @@
 package com.springboot.app.models.services;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -10,10 +12,12 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -369,9 +373,7 @@ public class TareaTagsServiceImplTest {
 		Integer tagId = faker.number().numberBetween(1, Integer.MAX_VALUE);
 				
 		Long authUserId = faker.number().randomNumber();
-		
-		Usuario authUser = new UsuarioTestDataBuilder().withId(authUserId).build();
-				
+							
 		
 		Tarea tarea = new TareaTestDataBuilder().withId(tareaId)					
 				.build();
@@ -421,13 +423,11 @@ public class TareaTagsServiceImplTest {
 				.withProject(project)
 				.build();
 		
-		Tag tag = new TagTestDataBuilder().withId(tagId).build();
-		
+		Tag tag = new TagTestDataBuilder().withId(tagId).build();		
 		
 		TareaTags tareaTag = new TareaTagsTestDataBuilder().withTag(tag).withTarea(tarea).build();
 		
-		tarea.setTareaTagsList(List.of(tareaTag));
-		
+		tarea.setTareaTagsList(List.of(tareaTag));		
 		
 		when( tareaService.findByIdGuid(tareaId) ).thenReturn(Optional.of(tarea));
 		
@@ -453,6 +453,256 @@ public class TareaTagsServiceImplTest {
 		verify(tareaTagsDao,never()).saveAndFlush(any(TareaTags.class));
 		
 		verify(tareaService,never()).getTagsFromTarea(anyString());
+		
+	}
+	
+	@Test
+	void quitarTag_debeLanzarNoSuchException_siTareaNoExiste() {
+		//Arrange
+		String tareaId = UUID.randomUUID().toString();
+		
+		Integer tagId = faker.number().numberBetween(1, Integer.MAX_VALUE);
+				
+		Long authUserId = faker.number().randomNumber();
+		
+		when(tareaService.findByIdGuid(tareaId)).thenReturn(Optional.empty());
+		
+		
+		//Act
+		
+
+		NoSuchElementException ex = assertThrows(NoSuchElementException.class, () -> tareaTagsService.quitarTag(tareaId, tagId, authUserId));
+		
+		
+		//Assert
+		
+		assertTrue(ex.getMessage().toLowerCase().contains("tarea no encontrada"));
+		
+		verify(projectMemberService,never()).isOwner(anyLong(), anyString());
+		
+		verify(tareaTagsDao,never()).delete(any(TareaTags.class));
+		
+	}
+	
+	@Test
+	void quitarTag_debeLanzarAccessDeniedException_siTareaNoExiste() {
+		//Arrange
+		String tareaId = UUID.randomUUID().toString();
+		
+		Integer tagId = faker.number().numberBetween(1, Integer.MAX_VALUE);
+				
+		Long authUserId = faker.number().randomNumber();
+		
+		
+		Project project = new ProjectTestDataBuilder().build();
+		
+		Tarea tarea = new TareaTestDataBuilder().withId(tareaId)
+				.withProject(project)
+				.build();
+		
+		
+		when(tareaService.findByIdGuid(tareaId)).thenReturn(Optional.of(tarea));
+		
+		when(projectMemberService.isOwner(authUserId, tarea.getProject().getIdGuid())).thenReturn(false);
+		
+		
+		//Act
+		
+
+		AccessDeniedException ex = assertThrows(AccessDeniedException.class, () -> tareaTagsService.quitarTag(tareaId, tagId, authUserId));
+		
+		
+		//Assert
+		
+		assertTrue(ex.getMessage().toLowerCase().contains("no tienes los permisos para realizar esta accion"));
+		
+		verify(projectMemberService).isOwner(eq(authUserId), eq(tarea.getProject().getIdGuid()));
+		
+		verify(tareaTagsDao,never()).delete(any(TareaTags.class));
+		
+	}
+	
+	@Test
+	void quitarTag_debeBorrarTag_siTareaTieneTagsAsociados() {
+		//Arrange
+		String tareaId = UUID.randomUUID().toString();
+		
+		Integer tagId = faker.number().numberBetween(1, Integer.MAX_VALUE);
+				
+		Long authUserId = faker.number().randomNumber();
+		
+		Usuario authUser = new UsuarioTestDataBuilder().withId(authUserId).build();
+		
+		Project project = new ProjectTestDataBuilder().withOwner(authUser).build();
+		
+		Tarea tarea = new TareaTestDataBuilder().withId(tareaId)
+				.withProject(project)
+				.build();
+		
+		Tag tag = new TagTestDataBuilder().withId(tagId).build();
+		
+		Tag tag2 = new TagTestDataBuilder().build();
+		
+		TareaTags tareaTag = new TareaTagsTestDataBuilder().withTag(tag).withTarea(tarea).build();
+		
+		TareaTags tareaTag2 = new TareaTagsTestDataBuilder().withTag(tag2).withTarea(tarea).build();
+		
+		List<TareaTags> listTareaTags = new ArrayList<>(List.of(tareaTag,tareaTag2));
+		
+		tarea.setTareaTagsList(listTareaTags);		
+		
+		when(tareaService.findByIdGuid(tareaId)).thenReturn(Optional.of(tarea));
+		
+		when(projectMemberService.isOwner(authUserId, tarea.getProject().getIdGuid())).thenReturn(true);
+		
+		doAnswer(inv -> {
+			
+			TareaTags tareaTagDeleted = inv.getArgument(0);
+			
+			listTareaTags.removeIf(tt -> tt.getId().equals(tareaTagDeleted.getId()));
+			
+			tarea.setTareaTagsList(listTareaTags);
+			
+			return null;
+		}).when(tareaTagsDao).delete(any(TareaTags.class));
+		
+		ArgumentCaptor<TareaTags> tareaTagsCaptor = ArgumentCaptor.forClass(TareaTags.class);
+		
+		//Act
+		
+
+		tareaTagsService.quitarTag(tareaId, tagId, authUserId);
+		
+		
+		//Assert
+		
+
+		verify(tareaTagsDao).delete(tareaTagsCaptor.capture());
+		
+		TareaTags deleted = tareaTagsCaptor.getValue();
+		
+		assertNotNull(deleted);
+		assertNotNull(tarea.getTareaTagsList());
+		assertSame(tag, deleted.getTag());
+		assertSame(tarea, deleted.getTarea());
+		assertEquals(1, tarea.getTareaTagsList().size());
+		assertFalse(tarea.getTareaTagsList().stream().anyMatch(tt -> tt.getId().equals(deleted.getId())));
+		
+		verify(projectMemberService).isOwner(eq(authUserId), eq(tarea.getProject().getIdGuid()));
+		
+		
+	}
+	
+	@Test
+	void quitarTag_debeBorrarTag_siTareaTieneUnTagAsociado() {
+		//Arrange
+		String tareaId = UUID.randomUUID().toString();
+		
+		Integer tagId = faker.number().numberBetween(1, Integer.MAX_VALUE);
+				
+		Long authUserId = faker.number().randomNumber();
+		
+		Usuario authUser = new UsuarioTestDataBuilder().withId(authUserId).build();
+		
+		Project project = new ProjectTestDataBuilder().withOwner(authUser).build();
+		
+		Tarea tarea = new TareaTestDataBuilder().withId(tareaId)
+				.withProject(project)
+				.build();
+		
+		Tag tag = new TagTestDataBuilder().withId(tagId).build();
+		
+		
+		
+		TareaTags tareaTag = new TareaTagsTestDataBuilder().withTag(tag).withTarea(tarea).build();
+		
+		
+		
+		List<TareaTags> listTareaTags = new ArrayList<>(List.of(tareaTag));
+		
+		tarea.setTareaTagsList(listTareaTags);		
+		
+		when(tareaService.findByIdGuid(tareaId)).thenReturn(Optional.of(tarea));
+		
+		when(projectMemberService.isOwner(authUserId, tarea.getProject().getIdGuid())).thenReturn(true);
+		
+		doAnswer(inv -> {
+			
+			TareaTags tareaTagDeleted = inv.getArgument(0);
+			
+			listTareaTags.removeIf(tt -> tt.getId().equals(tareaTagDeleted.getId()));
+			
+			tarea.setTareaTagsList(listTareaTags);
+			
+			return null;
+		}).when(tareaTagsDao).delete(any(TareaTags.class));
+		
+		ArgumentCaptor<TareaTags> tareaTagsCaptor = ArgumentCaptor.forClass(TareaTags.class);
+		
+		//Act
+		
+
+		tareaTagsService.quitarTag(tareaId, tagId, authUserId);
+		
+		
+		//Assert
+		
+
+		verify(tareaTagsDao).delete(tareaTagsCaptor.capture());
+		
+		TareaTags deleted = tareaTagsCaptor.getValue();
+		
+		assertNotNull(deleted);
+		assertNotNull(tarea.getTareaTagsList());
+		assertSame(tag, deleted.getTag());
+		assertSame(tarea, deleted.getTarea());
+		assertEquals(0, tarea.getTareaTagsList().size());		
+		
+		verify(projectMemberService).isOwner(eq(authUserId), eq(tarea.getProject().getIdGuid()));
+		
+		
+	}
+	
+	@Test
+	void quitarTag_debeHacerNada_siTareaNoTieneTagsAsociados() {
+		//Arrange
+		String tareaId = UUID.randomUUID().toString();
+		
+		Integer tagId = faker.number().numberBetween(1, Integer.MAX_VALUE);
+				
+		Long authUserId = faker.number().randomNumber();
+		
+		Usuario authUser = new UsuarioTestDataBuilder().withId(authUserId).build();
+		
+		Project project = new ProjectTestDataBuilder().withOwner(authUser).build();
+		
+		Tarea tarea = new TareaTestDataBuilder().withId(tareaId)
+				.withProject(project)
+				.build();
+		
+
+		
+		when(tareaService.findByIdGuid(tareaId)).thenReturn(Optional.of(tarea));
+		
+		when(projectMemberService.isOwner(authUserId, tarea.getProject().getIdGuid())).thenReturn(true);
+		
+
+		//Act
+		
+
+		tareaTagsService.quitarTag(tareaId, tagId, authUserId);
+		
+		
+		//Assert
+		
+
+
+
+		assertNull(tarea.getTareaTagsList());
+
+		verify(tareaService).findByIdGuid(tareaId);
+		verify(projectMemberService).isOwner(eq(authUserId), eq(tarea.getProject().getIdGuid()));
+		verify(tareaTagsDao,never()).delete(any(TareaTags.class));
 		
 	}
 	
