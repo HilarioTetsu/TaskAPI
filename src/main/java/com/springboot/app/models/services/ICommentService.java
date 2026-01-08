@@ -6,6 +6,7 @@ import org.springframework.data.domain.Page;
 
 import com.springboot.app.models.dtos.CommentDto;
 import com.springboot.app.models.dtos.CommentUpdateDto;
+import com.springboot.app.models.dtos.CommentViewDto;
 import com.springboot.app.models.entities.Media;
 
 
@@ -18,9 +19,9 @@ public interface ICommentService {
 
 	CommentDto saveComment(CommentDto dto, List<Media> mediasSaved, Long authUserId);
 
-	Page<CommentDto> getAll(Integer pagina, Integer tamanio, String sorts, Long userId);
+	Page<CommentViewDto> getAll(Integer pagina, Integer tamanio, String sorts, Long userId);
 
-	Page<CommentDto> getAllByTareaId(Integer pagina, Integer tamanio, String sorts, Long userId, String tareaId);
+	Page<CommentViewDto> getAllByTareaId(Integer pagina, Integer tamanio, String sorts, Long userId, String tareaId);
 
 	void deleteComment(Long commentId, Long userId);
 

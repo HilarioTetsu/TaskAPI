@@ -84,8 +84,7 @@ public class CommentDtoTestDataBuilder {
         dto.setOwnerUserId(ownerUserId);
         dto.setBody(body);
         dto.setMentionsUserIds(mentionsUserIds);
-        dto.setConfirmMediaStorageKeyId(confirmMediaStorageKeyId);
-        dto.setConfirmMediaStorageKeyUrls(confirmMediaStorageKeyUrls);
+        dto.setConfirmMediasStorageKeyId(confirmMediaStorageKeyId);       
         dto.setStatus(status);
         dto.setFechaCreacion(fechaCreacion);
         

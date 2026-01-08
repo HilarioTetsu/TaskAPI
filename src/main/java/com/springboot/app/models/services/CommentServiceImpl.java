@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.springboot.app.models.dao.ICommentDao;
 import com.springboot.app.models.dtos.CommentDto;
 import com.springboot.app.models.dtos.CommentUpdateDto;
+import com.springboot.app.models.dtos.CommentViewDto;
 import com.springboot.app.models.entities.Comment;
 import com.springboot.app.models.entities.Media;
 import com.springboot.app.models.entities.Tarea;
@@ -111,11 +112,11 @@ public class CommentServiceImpl implements ICommentService {
 
 	@Override
 	@Transactional(readOnly = true)
-	public Page<CommentDto> getAll(Integer pagina, Integer tamanio, String sorts, Long userId) {
+	public Page<CommentViewDto> getAll(Integer pagina, Integer tamanio, String sorts, Long userId) {
 
 		Pageable pageable = PageRequest.of(pagina, tamanio, Utils.parseSortParams(sorts));
 		
-			Page<CommentDto> pageDtos = commentDao.findAllByUserId(pageable, userId).map(comm -> {
+			Page<CommentViewDto> pageDtos = commentDao.findAllByUserId(pageable, userId).map(comm -> {
 			
 			List<Media> medias = comm.getAdjuntos().stream()
 					.filter(media -> media.getStatus().equals(Constants.STATUS_READY))
@@ -123,9 +124,9 @@ public class CommentServiceImpl implements ICommentService {
 									
 			List<String> urls = mediaService.createPresignedGetUrls(medias.stream().map(m -> m.getStorageKey()).toList());
 			
-			CommentDto dto = new CommentDto(comm);
+			CommentViewDto dto = new CommentViewDto(comm);
 			
-			dto.setConfirmMediaStorageKeyUrls(urls);
+			dto.setConfirmMediasStorageKeyUrls(urls);
 			
 			return dto;
 			
@@ -138,7 +139,7 @@ public class CommentServiceImpl implements ICommentService {
 	}
 
 	@Override
-	public Page<CommentDto> getAllByTareaId(Integer pagina, Integer tamanio, String sorts, Long userId,
+	public Page<CommentViewDto> getAllByTareaId(Integer pagina, Integer tamanio, String sorts, Long userId,
 			String tareaId) {
 
 		Tarea tarea = tareaService.findByIdGuid(tareaId)
@@ -157,7 +158,7 @@ public class CommentServiceImpl implements ICommentService {
 		Pageable pageable = PageRequest.of(pagina, tamanio, Utils.parseSortParams(sorts));
 
 
-		Page<CommentDto> pageDtos = commentDao.findAllByTareaId(pageable, tareaId).map(comm -> {
+		Page<CommentViewDto> pageDtos = commentDao.findAllByTareaId(pageable, tareaId).map(comm -> {
 			
 			List<Media> medias = comm.getAdjuntos().stream()
 					.filter(media -> media.getStatus().equals(Constants.STATUS_READY))
@@ -165,9 +166,9 @@ public class CommentServiceImpl implements ICommentService {
 									
 			List<String> urls = mediaService.createPresignedGetUrls(medias.stream().map(m -> m.getStorageKey()).toList());
 			
-			CommentDto dto = new CommentDto(comm);
+			CommentViewDto dto = new CommentViewDto(comm);
 			
-			dto.setConfirmMediaStorageKeyUrls(urls);
+			dto.setConfirmMediasStorageKeyUrls(urls);
 			
 			return dto;
 			

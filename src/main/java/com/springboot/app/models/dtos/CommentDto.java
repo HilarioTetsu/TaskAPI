@@ -25,7 +25,7 @@ public class CommentDto {
 		this.mentionsUserIds = comment.getMentions() != null && comment.getMentions().size() > 0
 				? comment.getMentions().stream().map(u -> u.getId()).toList()
 				: null;
-		this.confirmMediaStorageKeyId = comment.getAdjuntos() != null && comment.getAdjuntos().size() > 0
+		this.confirmMediasStorageKeyId = comment.getAdjuntos() != null && comment.getAdjuntos().size() > 0
 				? comment.getAdjuntos().stream().map(adj -> adj.getStorageKey()).toList()
 				: null;
 		this.status = comment.getStatus();
@@ -50,10 +50,7 @@ public class CommentDto {
 	private List<Long> mentionsUserIds;
 
 	@Schema(description = "Al crear: Lista de Keys de S3 de archivos previamente subidos para confirmar/adjuntar. Al leer: puede venir nulo.", example = "[\"users/1/.../file.png\"]")
-	private List<String> confirmMediaStorageKeyId;
-
-	@Schema(description = "Solo lectura: Lista de URLs firmadas (GET) para visualizar los adjuntos.", example = "[\"https://s3.../file.png?signature=...\"]")
-	private List<String> confirmMediaStorageKeyUrls;
+	private List<String> confirmMediasStorageKeyId;
 
 	@Schema(description = "Estado del comentario (1=Activo, 0=Eliminado).", example = "1")
 	private Short status;

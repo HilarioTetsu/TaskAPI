@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.springboot.app.models.dtos.CommentDto;
 import com.springboot.app.models.dtos.CommentUpdateDto;
+import com.springboot.app.models.dtos.CommentViewDto;
 import com.springboot.app.models.dtos.UploadRequestDto;
 import com.springboot.app.models.dtos.UploadResponseDto;
 import com.springboot.app.models.entities.Media;
@@ -92,7 +93,7 @@ public class CommentController {
             )
         })
 	@GetMapping
-	public ResponseEntity<Page<CommentDto>> getAllComments(  @Parameter(
+	public ResponseEntity<Page<CommentViewDto>> getAllComments(  @Parameter(
             description = "Número de página (0-based).",
             example = "0"
         )
@@ -216,15 +217,15 @@ public class CommentController {
 	public ResponseEntity<CommentDto> createCommAndConfirmAttachments(@RequestBody @Valid CommentDto dto,
 			@AuthenticationPrincipal CustomUserDetails authUser) {
 
-		if (dto.getConfirmMediaStorageKeyId() == null || dto.getConfirmMediaStorageKeyId().size() == 0) {
+		if (dto.getConfirmMediasStorageKeyId() == null || dto.getConfirmMediasStorageKeyId().size() == 0) {
 			return ResponseEntity.ok().body(commentService.saveComment(dto, authUser.getUserId()));
 		}
 
-		if (!storageService.verifySizeFiles(dto.getConfirmMediaStorageKeyId())) {
+		if (!storageService.verifySizeFiles(dto.getConfirmMediasStorageKeyId())) {
 			throw new IllegalArgumentException("Archivo excede el límite de 30MB");
 		}
 
-		List<Media> mediasSaved = mediaService.updateStatusMedia(dto.getConfirmMediaStorageKeyId(),
+		List<Media> mediasSaved = mediaService.updateStatusMedia(dto.getConfirmMediasStorageKeyId(),
 				authUser.getUserId());
 
 		return ResponseEntity.status(HttpStatus.CREATED)
