@@ -1,10 +1,7 @@
 package com.springboot.app.controllers;
 
 import java.io.Serializable;
-
-
 import java.util.Map;
-
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -15,6 +12,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
 import com.springboot.app.models.dtos.AuthRequestDto;
 import com.springboot.app.models.dtos.UsuarioDto;
 import com.springboot.app.models.services.IUsuarioService;

@@ -8,7 +8,6 @@ import org.springframework.data.jpa.repository.NativeQuery;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import com.springboot.app.models.dtos.UsuarioAuthInfoDto;
 import com.springboot.app.models.entities.Usuario;
 
 @Repository

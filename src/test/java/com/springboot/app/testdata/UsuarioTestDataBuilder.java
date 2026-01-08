@@ -4,7 +4,6 @@ package com.springboot.app.testdata;
 
 import java.util.List;
 
-
 import com.github.javafaker.Faker;
 import com.springboot.app.models.entities.Rol;
 import com.springboot.app.models.entities.Tarea;

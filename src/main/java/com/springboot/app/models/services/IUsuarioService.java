@@ -1,14 +1,11 @@
 package com.springboot.app.models.services;
 
 import java.util.List;
-import java.util.Optional;
 
 import com.springboot.app.models.dtos.UsuarioAuthInfoDto;
 import com.springboot.app.models.dtos.UsuarioDto;
 import com.springboot.app.models.dtos.UsuarioUpdateDto;
 import com.springboot.app.models.entities.Usuario;
-
-import jakarta.validation.Valid;
 
 public interface IUsuarioService {
 	

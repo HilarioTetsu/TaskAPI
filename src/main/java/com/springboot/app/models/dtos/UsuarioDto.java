@@ -1,8 +1,11 @@
 package com.springboot.app.models.dtos;
 
 import java.util.List;
+
 import org.hibernate.validator.constraints.Length;
+
 import com.springboot.app.models.entities.Usuario;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

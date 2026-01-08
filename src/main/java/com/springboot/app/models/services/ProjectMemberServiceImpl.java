@@ -19,7 +19,6 @@ import com.springboot.app.models.entities.ProjectMember;
 import com.springboot.app.models.entities.Tarea;
 import com.springboot.app.models.entities.Usuario;
 import com.springboot.app.utils.Constants;
-import com.springboot.app.utils.CustomUserDetails;
 import com.springboot.app.utils.ProjectRole;
 
 import jakarta.validation.Valid;

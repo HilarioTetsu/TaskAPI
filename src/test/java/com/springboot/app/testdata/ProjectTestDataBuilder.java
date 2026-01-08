@@ -1,8 +1,6 @@
 package com.springboot.app.testdata;
 
 import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.List;
 import java.util.UUID;
 
 import com.github.javafaker.Faker;

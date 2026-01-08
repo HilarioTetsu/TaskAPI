@@ -1,7 +1,9 @@
 package com.springboot.app.models.dtos;
 
 import java.util.List;
+
 import com.springboot.app.models.entities.Usuario;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Data;

@@ -1,7 +1,6 @@
 package com.springboot.app.models.services;
 
 import java.util.List;
-import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 

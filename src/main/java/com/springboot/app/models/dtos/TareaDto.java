@@ -3,8 +3,11 @@ package com.springboot.app.models.dtos;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
+
 import org.hibernate.validator.constraints.Length;
+
 import com.springboot.app.models.entities.Tarea;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotBlank;

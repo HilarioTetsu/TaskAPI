@@ -46,7 +46,7 @@ import com.springboot.app.testdata.TareaTestDataBuilder;
 import com.springboot.app.testdata.UsuarioTestDataBuilder;
 
 @ExtendWith(MockitoExtension.class)
-public class TareaTagsServiceImplTest {
+class TareaTagsServiceImplTest {
 
 	@InjectMocks
 	private TareaTagsServiceImpl tareaTagsService;

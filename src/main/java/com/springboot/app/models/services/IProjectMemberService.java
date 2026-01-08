@@ -9,7 +9,6 @@ import java.util.Optional;
 
 import com.springboot.app.models.dtos.ProjectMemberDto;
 import com.springboot.app.models.entities.ProjectMember;
-import com.springboot.app.utils.CustomUserDetails;
 
 import jakarta.validation.Valid;
 

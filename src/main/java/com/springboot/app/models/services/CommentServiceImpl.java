@@ -1,17 +1,12 @@
 package com.springboot.app.models.services;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -53,10 +48,13 @@ public class CommentServiceImpl implements ICommentService {
 	public CommentDto saveComment(CommentDto dto, Long authUserId) {
 
 		Tarea tarea = tareaService.findByIdGuid(dto.getTareaId())
-				.orElseThrow(() -> new NoSuchElementException("Tarea no encontrado"));
+				.orElseThrow(() -> new NoSuchElementException("Tarea no encontrada"));
 
-		if (!tareaService.isAsignedToThisTask(tarea.getIdGuid(), authUserId) || !projectMemberService.canEditTasks(authUserId, tarea.getProject().getIdGuid())) {
-			throw new SecurityException("No puedes comentar en esta tarea");
+		if (!tareaService.isAsignedToThisTask(tarea.getIdGuid(), authUserId)) {
+			
+			if (!projectMemberService.canEditTasks(authUserId, tarea.getProject().getIdGuid())) {
+				throw new SecurityException("No puedes comentar en esta tarea");
+			}					
 		}
 
 		Usuario autor = usuarioService.findByUserId(authUserId);
@@ -238,22 +236,6 @@ public class CommentServiceImpl implements ICommentService {
 	
 	
 	
-	public Page<CommentDto> convertirListaEnPage(List<CommentDto> commts, Pageable pageable) {
-	    if (commts == null) {
-	        return new PageImpl<>(Collections.emptyList(), pageable, 0);
-	    }
 
-	    int start = (int) pageable.getOffset();
-	    int end = Math.min((start + pageable.getPageSize()), commts.size());
-
-	    // Validación crítica: Si el inicio supera el tamaño de la lista, retorna lista vacía
-	    if (start > commts.size()) {
-	        return new PageImpl<>(new ArrayList<>(), pageable, commts.size());
-	    }
-
-	    List<CommentDto> subLista = commts.subList(start, end);
-
-	    return new PageImpl<>(subLista, pageable, commts.size());
-	}
 
 }
