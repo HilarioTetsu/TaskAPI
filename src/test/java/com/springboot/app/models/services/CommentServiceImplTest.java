@@ -1,24 +1,20 @@
 package com.springboot.app.models.services;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyShort;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.never;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -33,20 +29,26 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 
 import com.github.javafaker.Faker;
 import com.springboot.app.models.dao.ICommentDao;
 import com.springboot.app.models.dtos.CommentDto;
+import com.springboot.app.models.dtos.CommentViewDto;
 import com.springboot.app.models.entities.Comment;
 import com.springboot.app.models.entities.Media;
 import com.springboot.app.models.entities.Project;
 import com.springboot.app.models.entities.Tarea;
 import com.springboot.app.models.entities.Usuario;
 import com.springboot.app.testdata.CommentDtoTestDataBuilder;
+import com.springboot.app.testdata.CommentTestDataBuilder;
 import com.springboot.app.testdata.MediaTestDataBuilder;
 import com.springboot.app.testdata.ProjectTestDataBuilder;
 import com.springboot.app.testdata.TareaTestDataBuilder;
 import com.springboot.app.testdata.UsuarioTestDataBuilder;
+import com.springboot.app.utils.Constants;
 
 @ExtendWith(MockitoExtension.class)
 class CommentServiceImplTest {
@@ -341,7 +343,7 @@ class CommentServiceImplTest {
 	}
 	
 	@Test
-	void saveComment_debeGuardarComentario_siauthUserEnMenciones() {
+	void saveComment_debeGuardarComentario_siAuthUserEnMenciones() {
 
 		// Arrange
 
@@ -432,7 +434,7 @@ class CommentServiceImplTest {
 	}
 	
 	@Test
-    void saveComment_debeLanzarSecurityException_CuandoUsuarioNoEstaAsignadoATarea() {
+    void saveComment_debeLanzarSecurityException_cuandoUsuarioNoEstaAsignadoATarea() {
         // Arrange
         Long authUserId = faker.number().randomNumber();
         CommentDto dto = new CommentDtoTestDataBuilder().build();
@@ -468,7 +470,7 @@ class CommentServiceImplTest {
     }
 	
 	@Test
-    void saveComment_debeGuardarComentario_CuandoDatosSonValidos() {
+    void saveComment_debeGuardarComentario_cuandoDatosSonValidos() {
         // Arrange
         Long authUserId = 100L;
         String tareaId = UUID.randomUUID().toString();
@@ -528,7 +530,7 @@ class CommentServiceImplTest {
     }
 	
 	@Test
-    void saveComment_debeFiltrarAutoMenciones_CuandoUsuarioSeMencionaASiMismo() {
+    void saveComment_debeFiltrarAutoMenciones_cuandoUsuarioSeMencionaASiMismo() {
         // Arrange
         Long authUserId = 50L;
         Long otherUserId = 60L;
@@ -561,5 +563,375 @@ class CommentServiceImplTest {
         assertEquals(1, commentGuardado.getMentions().size());
         assertTrue(commentGuardado.getMentions().stream().anyMatch(m -> m.getId().equals(otherUserId)));
     }
+	
+	
+	@Test
+	void getAll_debeRetornarPaginaVacia_siUsuarioNoTieneComentarios() {
+		// Arrange
+		int pagina = 0;
+		int tamanio = 10;
+		Long authUserId=faker.number().randomNumber();
+		String sorts = "fecha_creacion,desc;";
+		
+
+		Page<Comment> pageComments = Page.empty();
+		
+		when(commentDao.findAllByUserId(any(Pageable.class), eq(authUserId))).thenReturn(pageComments);
+						
+		//Act
+		
+		Page<CommentViewDto> result = commentService.getAll(pagina, tamanio, sorts, authUserId);
+		
+		
+		//Assert
+		assertNotNull(result);
+		assertTrue(result.isEmpty());
+		assertEquals(0, result.getTotalElements());
+		
+		
+		verifyNoInteractions(mediaService);
+		
+	}
+	
+	
+	
+	@Test
+	void getAll_debeRetornarComentarios_siIgnoraAdjuntosSinStatusReady() {
+		// Arrange
+		int pagina = 0;
+		int tamanio = 10;
+		Long authUserId=faker.number().randomNumber();
+		String sorts = "fecha_creacion,desc;";
+		
+		
+		Usuario authUser = new UsuarioTestDataBuilder().withId(authUserId).build();
+		
+		 Media foto1 = new MediaTestDataBuilder()
+	        		.withOwnerId(authUserId)
+	        		.withStatus(Constants.STATUS_PENDING)
+	        		.build();
+		 		
+        Comment comment = new CommentTestDataBuilder()
+        				.withAutor(authUser)
+        				.withAdjuntos(new ArrayList<>(List.of(foto1)))
+        				.build();
+        
+        
+      
+       
+
+		Page<Comment> pageComments = new PageImpl<>(new ArrayList<>(List.of(comment)));
+		
+		when(commentDao.findAllByUserId(any(Pageable.class), eq(authUserId))).thenReturn(pageComments);
+						
+		
+		
+		ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+		
+		//Act
+		
+		Page<CommentViewDto> result = commentService.getAll(pagina, tamanio, sorts, authUserId);
+		
+		
+		//Assert
+		assertNotNull(result);
+		assertEquals(1, result.getTotalElements());
+		
+		CommentViewDto dto = result.getContent().get(0);
+	
+		
+		assertEquals(comment.getId(), dto.getId());
+		assertEquals(comment.getBody(), dto.getBody());
+		assertEquals(comment.getAutor().getId(), dto.getOwnerUserId());
+		assertNull(dto.getConfirmMediasStorageKeyUrls());
+		
+
+		verify(commentDao).findAllByUserId(pageableCaptor.capture(), eq(authUserId));
+		
+		Pageable pageableUsed = pageableCaptor.getValue();
+		
+		assertEquals(pagina, pageableUsed.getPageNumber());
+		assertEquals(tamanio, pageableUsed.getPageSize());
+		assertEquals(1, pageableUsed.getSort().toList().size());
+		
+		verify(mediaService,never()).createPresignedGetUrls(anyList());
+
+		
+	}
+	
+	
+	@Test
+	void getAll_debeRetornarComentarios_cuandoSonComentariosMultiples() {
+		// Arrange
+		int pagina = 0;
+		int tamanio = 10;
+		Long authUserId=faker.number().randomNumber();
+		String sorts = "fecha_creacion,desc;";
+		
+		
+		Usuario authUser = new UsuarioTestDataBuilder().withId(authUserId).build();
+		
+		Media foto1 = new MediaTestDataBuilder()
+	        		.withOwnerId(authUserId)
+	        		.withStatus(Constants.STATUS_READY)
+	        		.build();
+		 		
+        Comment comment = new CommentTestDataBuilder()
+        				.withAutor(authUser)
+        				.withAdjuntos(new ArrayList<>(List.of(foto1)))
+        				.build();
+        
+        Comment comment2 = new CommentTestDataBuilder()
+				.withAutor(authUser)				
+				.build();
+        
+      
+       
+
+		Page<Comment> pageComments = new PageImpl<>(new ArrayList<>(List.of(comment,comment2)));
+		
+		when(commentDao.findAllByUserId(any(Pageable.class), eq(authUserId))).thenReturn(pageComments);
+						
+		when(mediaService.createPresignedGetUrls(anyList())).thenReturn(List.of(faker.internet().url()));
+		
+		ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+		
+		//Act
+		
+		Page<CommentViewDto> result = commentService.getAll(pagina, tamanio, sorts, authUserId);
+		
+		
+		//Assert
+		assertNotNull(result);
+		assertEquals(2, result.getTotalElements());
+		
+		CommentViewDto dto1 = result.getContent().get(0);
+		CommentViewDto dto2 = result.getContent().get(1);
+		
+		assertEquals(comment.getId(), dto1.getId());
+		assertEquals(comment.getBody(), dto1.getBody());
+		assertEquals(comment.getAutor().getId(), dto1.getOwnerUserId());
+		assertEquals(comment.getAdjuntos().size(), dto1.getConfirmMediasStorageKeyUrls().size());
+		
+		assertEquals(comment2.getId(), dto2.getId());
+		assertEquals(comment2.getBody(), dto2.getBody());
+		assertEquals(comment2.getAutor().getId(), dto2.getOwnerUserId());
+		assertNull(comment2.getAdjuntos());
+		assertNull(dto2.getConfirmMediasStorageKeyUrls());
+		
+
+		
+		verify(commentDao).findAllByUserId(pageableCaptor.capture(), eq(authUserId));
+		
+		Pageable pageableUsed = pageableCaptor.getValue();
+		
+		assertEquals(pagina, pageableUsed.getPageNumber());
+		assertEquals(tamanio, pageableUsed.getPageSize());
+		assertEquals(1, pageableUsed.getSort().toList().size());
+		
+		verify(mediaService).createPresignedGetUrls(anyList());
+
+		
+	}
+	
+	@Test
+	void getAllByTareaId_debeLanzarNoSuchElementException_siTareaNoExiste() {
+		
+		//Arrange
+		int pagina = 0;
+		
+		int tamanio = 10;
+		
+		Long authUserId=faker.number().randomNumber();
+		
+		String tareaId=UUID.randomUUID().toString();
+		
+		String sorts = "fecha_creacion,desc;";
+		
+		when(tareaService.findByIdGuid(tareaId)).thenReturn(Optional.empty());
+		
+		//Act
+		
+		NoSuchElementException ex = assertThrows(NoSuchElementException.class, () -> commentService.getAllByTareaId(pagina, tamanio, sorts, authUserId, tareaId));
+		
+		assertTrue(ex.getMessage().toLowerCase().contains("tarea no encontrada"));
+		
+		verify(tareaService,never()).isAsignedToThisTask(anyString(), anyLong());
+		verifyNoInteractions(projectMemberService);
+		verifyNoInteractions(mediaService);
+		verifyNoInteractions(commentDao);
+		
+	}
+	
+	@Test
+	void getAllByTareaId_debeSecurityException_siNoCumpleValidaciones() {
+		
+		//Arrange
+		int pagina = 0;
+		
+		int tamanio = 10;
+		
+		Long authUserId=faker.number().randomNumber();
+		
+		String tareaId=UUID.randomUUID().toString();
+		
+		String sorts = "fecha_creacion,desc;";
+		
+		
+		Tarea tarea = new TareaTestDataBuilder().withId(tareaId).build();
+		
+		when(tareaService.findByIdGuid(tareaId)).thenReturn(Optional.of(tarea));
+		when(tareaService.isAsignedToThisTask(tareaId, authUserId)).thenReturn(false);
+		when(projectMemberService.isMember(authUserId, tarea.getProject().getIdGuid())).thenReturn(false);
+		
+		//Act
+		
+		SecurityException ex = assertThrows(SecurityException.class, () -> commentService.getAllByTareaId(pagina, tamanio, sorts, authUserId, tareaId));
+		
+		assertTrue(ex.getMessage().toLowerCase().contains("no tienes los permisos necesarios para esta tarea"));
+		
+		verify(tareaService).isAsignedToThisTask(tareaId, authUserId);
+		
+		verify(projectMemberService).isMember(authUserId, tarea.getProject().getIdGuid());
+		
+		verifyNoInteractions(mediaService);
+		verifyNoInteractions(commentDao);
+		
+	}
+	
+	@Test
+	void getAllByTareaId_debeRetornarComentarios_siCumpleValidaciones() {
+
+		// Arrange
+		int pagina = 0;
+
+		int tamanio = 10;
+
+		Long authUserId = faker.number().randomNumber();
+
+		String tareaId = UUID.randomUUID().toString();
+
+		String sorts = "fecha_creacion,desc;";
+
+		Usuario authUser = new UsuarioTestDataBuilder().withId(authUserId).build();
+
+		Tarea tarea = new TareaTestDataBuilder().withId(tareaId).withOwner(authUser).build();
+
+		Media foto1 = new MediaTestDataBuilder().withOwnerId(authUserId).withStatus(Constants.STATUS_READY).build();
+
+		Comment comment = new CommentTestDataBuilder().withAutor(authUser).withAdjuntos(new ArrayList<>(List.of(foto1)))
+				.build();
+
+		Comment comment2 = new CommentTestDataBuilder().withAutor(authUser).build();
+
+		Page<Comment> pageComments = new PageImpl<>(new ArrayList<>(List.of(comment, comment2)));
+
+		when(tareaService.findByIdGuid(tareaId)).thenReturn(Optional.of(tarea));
+		
+		when(tareaService.isAsignedToThisTask(tareaId, authUserId)).thenReturn(false);
+		
+		when(projectMemberService.isMember(authUserId, tarea.getProject().getIdGuid())).thenReturn(true);
+		
+		when(commentDao.findAllByTareaId(any(Pageable.class), eq(tareaId))).thenReturn(pageComments);
+		
+		when(mediaService.createPresignedGetUrls(anyList())).thenReturn(List.of(faker.internet().url()));
+		
+		ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+
+		// Act
+
+		Page<CommentViewDto> result = commentService.getAllByTareaId(pagina, tamanio, sorts, authUserId, tareaId);
+
+		
+
+		verify(tareaService).isAsignedToThisTask(tareaId, authUserId);
+
+		verify(projectMemberService).isMember(authUserId, tarea.getProject().getIdGuid());
+		
+		
+		assertNotNull(result);
+		assertEquals(2, result.getTotalElements());
+
+		CommentViewDto dto1 = result.getContent().get(0);
+		CommentViewDto dto2 = result.getContent().get(1);
+
+		assertEquals(comment.getId(), dto1.getId());
+		assertEquals(comment.getBody(), dto1.getBody());
+		assertEquals(comment.getAutor().getId(), dto1.getOwnerUserId());
+		assertEquals(comment.getAdjuntos().size(), dto1.getConfirmMediasStorageKeyUrls().size());
+
+		assertEquals(comment2.getId(), dto2.getId());
+		assertEquals(comment2.getBody(), dto2.getBody());
+		assertEquals(comment2.getAutor().getId(), dto2.getOwnerUserId());
+		assertNull(comment2.getAdjuntos());
+		assertNull(dto2.getConfirmMediasStorageKeyUrls());
+
+		verify(commentDao).findAllByTareaId(pageableCaptor.capture(), eq(tareaId));
+
+		Pageable pageableUsed = pageableCaptor.getValue();
+
+		assertEquals(pagina, pageableUsed.getPageNumber());
+		assertEquals(tamanio, pageableUsed.getPageSize());
+		assertEquals(1, pageableUsed.getSort().toList().size());
+
+		verify(mediaService).createPresignedGetUrls(anyList());
+
+		
+	}
+	
+	
+	@Test
+	void getAllByTareaId_debeRetornarPaginaVacia_siUsuarioNoTieneComentarios() {
+
+		// Arrange
+		int pagina = 0;
+
+		int tamanio = 10;
+
+		Long authUserId = faker.number().randomNumber();
+
+		String tareaId = UUID.randomUUID().toString();
+
+		String sorts = "fecha_creacion,desc;";
+
+		Usuario authUser = new UsuarioTestDataBuilder().withId(authUserId).build();
+
+		Tarea tarea = new TareaTestDataBuilder().withId(tareaId).withOwner(authUser).build();
+
+		
+
+		Page<Comment> pageComments = Page.empty();
+
+		when(tareaService.findByIdGuid(tareaId)).thenReturn(Optional.of(tarea));
+		
+		when(tareaService.isAsignedToThisTask(tareaId, authUserId)).thenReturn(false);
+		
+		when(projectMemberService.isMember(authUserId, tarea.getProject().getIdGuid())).thenReturn(true);
+		
+		when(commentDao.findAllByTareaId(any(Pageable.class), eq(tareaId))).thenReturn(pageComments);
+				
+		
+
+		// Act
+
+		Page<CommentViewDto> result = commentService.getAllByTareaId(pagina, tamanio, sorts, authUserId, tareaId);
+
+		
+
+		verify(tareaService).isAsignedToThisTask(tareaId, authUserId);
+
+		verify(projectMemberService).isMember(authUserId, tarea.getProject().getIdGuid());
+		
+		
+		assertNotNull(result);
+		assertTrue(result.isEmpty());
+		assertEquals(0, result.getTotalElements());
+
+
+		verifyNoInteractions(mediaService);
+
+		
+	}
+	
 
 }

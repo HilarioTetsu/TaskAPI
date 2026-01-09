@@ -25,7 +25,6 @@ public class CommentDtoTestDataBuilder {
     
     private List<String> confirmMediaStorageKeyId = Collections.emptyList();
     
-    private List<String> confirmMediaStorageKeyUrls = Collections.emptyList();
     
     private Short status = Constants.STATUS_ACTIVE;
     
@@ -61,10 +60,7 @@ public class CommentDtoTestDataBuilder {
         return this;
     }
 
-    public CommentDtoTestDataBuilder withConfirmMediaStorageKeyUrls(List<String> confirmMediaStorageKeyUrls) {
-        this.confirmMediaStorageKeyUrls = confirmMediaStorageKeyUrls;
-        return this;
-    }
+
 
     public CommentDtoTestDataBuilder withStatus(Short status) {
         this.status = status;

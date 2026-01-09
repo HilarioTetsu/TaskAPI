@@ -685,7 +685,7 @@ class TareaServiceImplTest {
 		// Arrange
 		int pagina = 0;
 		int tamanio = 10;
-		String sorts = "fechaLimite,desc;"; //
+		String sorts = "fechaLimite,desc;"; 
 
 		List<Short> statusIds = List.of((short) 1, (short) 2);
 		List<Short> prioridadIds = List.of((short) 3);

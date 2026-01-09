@@ -1,5 +1,6 @@
 package com.springboot.app.models.services;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -110,33 +111,38 @@ public class CommentServiceImpl implements ICommentService {
 		return new CommentDto(commentDao.save(comment));
 	}
 
-	@Override
-	@Transactional(readOnly = true)
-	public Page<CommentViewDto> getAll(Integer pagina, Integer tamanio, String sorts, Long userId) {
+@Override
+    @Transactional(readOnly = true)
+    public Page<CommentViewDto> getAll(Integer pagina, Integer tamanio, String sorts, Long userId) {
 
-		Pageable pageable = PageRequest.of(pagina, tamanio, Utils.parseSortParams(sorts));
-		
-			Page<CommentViewDto> pageDtos = commentDao.findAllByUserId(pageable, userId).map(comm -> {
-			
-			List<Media> medias = comm.getAdjuntos().stream()
-					.filter(media -> media.getStatus().equals(Constants.STATUS_READY))
-						.toList();
-									
-			List<String> urls = mediaService.createPresignedGetUrls(medias.stream().map(m -> m.getStorageKey()).toList());
-			
-			CommentViewDto dto = new CommentViewDto(comm);
-			
-			dto.setConfirmMediasStorageKeyUrls(urls);
-			
-			return dto;
-			
-		});
-		
-		
-		
+        Pageable pageable = PageRequest.of(pagina, tamanio, Utils.parseSortParams(sorts));
 
-		return pageDtos;
-	}
+        Page<CommentViewDto> pageDtos = commentDao.findAllByUserId(pageable, userId).map(comm -> {
+            
+           
+            List<Media> listaAdjuntos = comm.getAdjuntos() != null ? comm.getAdjuntos() : Collections.emptyList();
+
+           
+            List<Media> medias = listaAdjuntos.stream()
+                    .filter(media -> Constants.STATUS_READY.equals(media.getStatus())) 
+                    .toList();
+
+			if (medias.isEmpty()) {
+				  CommentViewDto dto = new CommentViewDto(comm);
+				  return dto;
+			}
+
+            List<String> keys = medias.stream().map(m -> m.getStorageKey()).toList();
+            List<String> urls = mediaService.createPresignedGetUrls(keys);
+
+            CommentViewDto dto = new CommentViewDto(comm);
+            dto.setConfirmMediasStorageKeyUrls(urls);
+
+            return dto;
+        });
+
+        return pageDtos;
+    }
 
 	@Override
 	public Page<CommentViewDto> getAllByTareaId(Integer pagina, Integer tamanio, String sorts, Long userId,
@@ -145,13 +151,13 @@ public class CommentServiceImpl implements ICommentService {
 		Tarea tarea = tareaService.findByIdGuid(tareaId)
 				.orElseThrow(() -> new NoSuchElementException("Tarea no encontrada"));
 
-		boolean esOwner = Objects.equals(tarea.getOwner().getId(), userId);
+		boolean isOwner = Objects.equals(tarea.getOwner().getId(), userId);
 
-		boolean esUsuarioAsignado = tareaService.isAsignedToThisTask(tareaId, userId);
+		boolean isUsuarioAsignado = tareaService.isAsignedToThisTask(tareaId, userId);
 
-		boolean esMiembroProyecto = projectMemberService.isMember(userId, tarea.getProject().getIdGuid());
+		boolean isMiembroProyecto = projectMemberService.isMember(userId, tarea.getProject().getIdGuid());
 
-		if (!(esOwner || esUsuarioAsignado || esMiembroProyecto)) {
+		if (!(isOwner || isUsuarioAsignado || isMiembroProyecto)) {
 			throw new SecurityException("No tienes los permisos necesarios para esta tarea");
 		}
 
@@ -159,10 +165,18 @@ public class CommentServiceImpl implements ICommentService {
 
 
 		Page<CommentViewDto> pageDtos = commentDao.findAllByTareaId(pageable, tareaId).map(comm -> {
+
+			List<Media> listaAdjuntos = comm.getAdjuntos() != null ? comm.getAdjuntos() : Collections.emptyList();
+
 			
-			List<Media> medias = comm.getAdjuntos().stream()
+			List<Media> medias = listaAdjuntos.stream()
 					.filter(media -> media.getStatus().equals(Constants.STATUS_READY))
 						.toList();
+
+			if (medias.isEmpty()) {
+				  CommentViewDto dto = new CommentViewDto(comm);
+				  return dto;
+			}			
 									
 			List<String> urls = mediaService.createPresignedGetUrls(medias.stream().map(m -> m.getStorageKey()).toList());
 			
