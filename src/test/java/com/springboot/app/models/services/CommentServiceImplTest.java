@@ -764,7 +764,7 @@ class CommentServiceImplTest {
 	}
 	
 	@Test
-	void getAllByTareaId_debeSecurityException_siNoCumpleValidaciones() {
+	void getAllByTareaId_debeLanzarSecurityException_siNoCumpleValidaciones() {
 		
 		//Arrange
 		int pagina = 0;
@@ -930,6 +930,167 @@ class CommentServiceImplTest {
 
 		verifyNoInteractions(mediaService);
 
+		
+	}
+	
+	@Test
+	void deleteComment_debeLanzarNoSuchElementException_siCommentNoExiste() {
+
+		//Arrange		
+		Long commentId=faker.number().randomNumber();
+		Long authUserId=faker.number().randomNumber();
+		
+		when(commentDao.findById(commentId)).thenReturn(Optional.empty());
+		
+		//Act
+		
+		NoSuchElementException ex = assertThrows(NoSuchElementException.class, () -> commentService.deleteComment(commentId, authUserId));
+		
+		//Assert
+		
+		assertTrue(ex.getMessage().toLowerCase().contains("comentario no encontrado"));
+		
+		verifyNoInteractions(projectMemberService);
+		
+		verifyNoInteractions(mediaService);
+		
+		verify(commentDao,never()).save(any(Comment.class));
+		
+	}
+	
+	@Test
+	void deleteComment_debeLanzarSecurityException_siNoTienePermisos() {
+
+		//Arrange		
+		Long commentId=faker.number().randomNumber();
+		Long authUserId=faker.number().randomNumber();
+		
+		Usuario authUser= new UsuarioTestDataBuilder().build();
+		
+		Comment comment=new CommentTestDataBuilder().withId(commentId)
+				.withAutor(authUser)
+				.build();
+		
+		when(commentDao.findById(commentId)).thenReturn(Optional.of(comment));
+		
+		when(projectMemberService.isOwner(anyLong(), anyString())).thenReturn(false);
+		
+		//Act
+		
+		SecurityException ex = assertThrows(SecurityException.class, () -> commentService.deleteComment(commentId, authUserId));
+		
+		//Assert
+		
+		assertTrue(ex.getMessage().toLowerCase().contains("no tienes los permisos necesarios para este comentario"));
+		
+		verify(projectMemberService).isOwner(anyLong(), anyString());
+		
+		verifyNoInteractions(mediaService);
+		
+		verify(commentDao,never()).save(any(Comment.class));
+		
+	}
+	
+	@Test
+	void deleteComment_debeBorrarComentario_siNoContieneAdjuntos() {
+
+		//Arrange		
+		Long commentId=faker.number().randomNumber();
+		Long authUserId=faker.number().randomNumber();
+		
+		Usuario authUser= new UsuarioTestDataBuilder()
+				.withId(authUserId)
+				.build();
+		
+		Comment comment=new CommentTestDataBuilder().withId(commentId)
+				.withAutor(authUser)
+				.build();
+		
+		when(commentDao.findById(commentId)).thenReturn(Optional.of(comment));
+		
+		ArgumentCaptor<Comment> commentCaptor = ArgumentCaptor.forClass(Comment.class);
+		
+		//Act
+		
+		 commentService.deleteComment(commentId, authUserId);
+		
+		
+		//Assert		
+		
+		verifyNoInteractions(projectMemberService);
+		
+		verifyNoInteractions(mediaService);
+		
+		verify(commentDao).findById(commentId);
+		
+		verify(commentDao).save(commentCaptor.capture());
+		
+		Comment commentDeleted = commentCaptor.getValue();
+		
+		assertNotNull(commentDeleted);
+		assertEquals(commentId, commentDeleted.getId());
+		assertSame(authUser, commentDeleted.getAutor());
+		assertEquals(Constants.STATUS_INACTIVE, commentDeleted.getStatus());
+		
+	}
+	
+	@Test
+	void deleteComment_debeBorrarComentario_siContieneAdjuntos() {
+
+		//Arrange		
+		Long commentId=faker.number().randomNumber();
+		Long authUserId=faker.number().randomNumber();
+		
+		Usuario authUser= new UsuarioTestDataBuilder()
+				.withId(authUserId)
+				.build();
+		
+		Media foto1 = new MediaTestDataBuilder().withOwnerId(authUserId).withStatus(Constants.STATUS_READY).build();
+
+		Comment comment = new CommentTestDataBuilder()
+				.withId(commentId)				
+				.withAdjuntos(new ArrayList<>(List.of(foto1)))
+				.build();
+
+		
+		when(commentDao.findById(commentId)).thenReturn(Optional.of(comment));
+		
+		when(projectMemberService.isOwner(anyLong(), anyString())).thenReturn(true);
+		
+		when(mediaService.saveAll(anyList())).thenAnswer(i -> i.getArgument(0));
+		
+		ArgumentCaptor<Comment> commentCaptor = ArgumentCaptor.forClass(Comment.class);
+		
+		ArgumentCaptor<List<Media>> mediaCaptor = ArgumentCaptor.forClass(List.class);
+		
+		//Act
+		
+		 commentService.deleteComment(commentId, authUserId);
+		
+		
+		//Assert		
+		
+		verify(projectMemberService).isOwner(anyLong(), anyString());
+				
+		
+		verify(commentDao).findById(commentId);
+		
+		verify(mediaService).saveAll(mediaCaptor.capture());
+		
+		verify(commentDao).save(commentCaptor.capture());
+		
+		Comment commentDeleted = commentCaptor.getValue();
+		
+		assertNotNull(commentDeleted);
+		assertEquals(commentId, commentDeleted.getId());		
+		assertEquals(Constants.STATUS_INACTIVE, commentDeleted.getStatus());
+		
+		
+		List<Media> mediaListDeleted = mediaCaptor.getValue();
+        assertNotNull(mediaListDeleted);
+        assertSame(commentDeleted.getAdjuntos(), mediaListDeleted);
+        assertEquals(1, mediaListDeleted.size());
+        assertEquals(Constants.STATUS_INACTIVE, mediaListDeleted.get(0).getStatus());
 		
 	}
 	

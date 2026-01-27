@@ -196,13 +196,13 @@ public class CommentServiceImpl implements ICommentService {
 
 	@Override
 	@Transactional
-	public void deleteComment(Long commentId, Long userId) {
+	public void deleteComment(Long commentId, Long authUserId) {
 
 		Comment comment = commentDao.findById(commentId)
 				.orElseThrow(() -> new NoSuchElementException("Comentario no encontrado"));
 
-		if (comment.getAutor().getId() != userId
-				&& !projectMemberService.isOwner(userId, comment.getTarea().getProject().getIdGuid())) {
+		if (comment.getAutor().getId() != authUserId
+				&& !projectMemberService.isOwner(authUserId, comment.getTarea().getProject().getIdGuid())) {
 			throw new SecurityException("No tienes los permisos necesarios para este comentario");
 		}
 
