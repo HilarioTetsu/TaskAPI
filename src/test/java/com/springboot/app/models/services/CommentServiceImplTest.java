@@ -36,6 +36,7 @@ import org.springframework.data.domain.Pageable;
 import com.github.javafaker.Faker;
 import com.springboot.app.models.dao.ICommentDao;
 import com.springboot.app.models.dtos.CommentDto;
+import com.springboot.app.models.dtos.CommentUpdateDto;
 import com.springboot.app.models.dtos.CommentViewDto;
 import com.springboot.app.models.entities.Comment;
 import com.springboot.app.models.entities.Media;
@@ -44,6 +45,7 @@ import com.springboot.app.models.entities.Tarea;
 import com.springboot.app.models.entities.Usuario;
 import com.springboot.app.testdata.CommentDtoTestDataBuilder;
 import com.springboot.app.testdata.CommentTestDataBuilder;
+import com.springboot.app.testdata.CommentUpdateDtoTestDataBuilder;
 import com.springboot.app.testdata.MediaTestDataBuilder;
 import com.springboot.app.testdata.ProjectTestDataBuilder;
 import com.springboot.app.testdata.TareaTestDataBuilder;
@@ -1041,9 +1043,7 @@ class CommentServiceImplTest {
 		Long commentId=faker.number().randomNumber();
 		Long authUserId=faker.number().randomNumber();
 		
-		Usuario authUser= new UsuarioTestDataBuilder()
-				.withId(authUserId)
-				.build();
+
 		
 		Media foto1 = new MediaTestDataBuilder().withOwnerId(authUserId).withStatus(Constants.STATUS_READY).build();
 
@@ -1092,6 +1092,185 @@ class CommentServiceImplTest {
         assertEquals(1, mediaListDeleted.size());
         assertEquals(Constants.STATUS_INACTIVE, mediaListDeleted.get(0).getStatus());
 		
+	}
+	
+	@Test
+	void updateComment_debeLanzarNoSuchException_siComentarioNoExiste() {
+		//Arrange
+		
+		Long commentId = faker.number().randomNumber();
+		
+		Long authUserId=faker.number().randomNumber();
+		
+		when(commentDao.findById(commentId)).thenReturn(Optional.empty());
+		
+		//Act
+		
+		NoSuchElementException ex = assertThrows(NoSuchElementException.class, () -> commentService.updateComment(commentId, null, authUserId));
+		
+		//Assert
+		assertTrue(ex.getMessage().toLowerCase().contains("comentario no encontrado"));
+		
+		verifyNoInteractions(usuarioService);
+				
+		
+		verify(commentDao,never()).save(any(Comment.class));
+		
+		
+	}
+	
+	@Test
+	void updateComment_debeLanzarSecurityException_siauthUserNoTienePermisos() {
+		//Arrange
+		
+		Long commentId=faker.number().randomNumber();
+		Long authUserId=faker.number().randomNumber();
+		
+		
+		Comment comment=new CommentTestDataBuilder().withId(commentId)				
+				.build();
+		
+		
+		when(commentDao.findById(commentId)).thenReturn(Optional.of(comment));
+		
+		//Act
+		
+		SecurityException ex = assertThrows(SecurityException.class, () -> commentService.updateComment(commentId, null, authUserId));
+		
+		//Assert
+		assertTrue(ex.getMessage().toLowerCase().contains("no tienes los permisos necesarios"));
+		
+		verifyNoInteractions(usuarioService);
+				
+		
+		verify(commentDao,never()).save(any(Comment.class));
+		
+		
+	}
+	
+	@Test
+	void updateComment_debeActualizar_siDtoNoContieneMenciones() {
+		//Arrange
+		
+		Long commentId=faker.number().randomNumber();
+		Long authUserId=faker.number().randomNumber();
+		
+		Usuario authUser = new UsuarioTestDataBuilder().withId(authUserId).build();
+		
+		Comment comment=new CommentTestDataBuilder().withId(commentId)
+				.withAutor(authUser)
+				.build();
+		
+		CommentUpdateDto dtoUpdate=new CommentUpdateDtoTestDataBuilder().build();
+		
+		when(commentDao.findById(commentId)).thenReturn(Optional.of(comment));
+		
+		when(commentDao.save(any(Comment.class))).thenAnswer(inv -> inv.getArgument(0));
+		
+		//Act
+		
+		CommentDto result= commentService.updateComment(commentId, dtoUpdate, authUserId);
+		
+		
+		//Assert
+		
+		assertNotNull(result);
+		assertNull(result.getMentionsUserIds());
+		assertEquals(dtoUpdate.getBody(), result.getBody());
+		assertEquals(commentId, result.getId());
+		
+		verify(commentDao).findById(commentId);
+		
+		verify(commentDao).save(any(Comment.class));
+		
+		verifyNoInteractions(usuarioService);
+		
+	}
+	
+	@Test
+	void updateComment_debeActualizarMenciones_siDtoContieneMencionesValidas() {
+		// Arrange
+		Long authUserId = faker.number().randomNumber();
+		Long mentionedUserId = faker.number().randomNumber();
+		Long commentId = faker.number().randomNumber();
+
+		Usuario authUser = new UsuarioTestDataBuilder().withId(authUserId).build();
+		Usuario mentionedUser = new UsuarioTestDataBuilder().withId(mentionedUserId).build();
+
+		Comment comment = new CommentTestDataBuilder()
+				.withId(commentId)
+				.withAutor(authUser)
+				.withMentions(null) 
+				.build();
+
+		CommentUpdateDto dtoUpdate = new CommentUpdateDtoTestDataBuilder()
+				.withMentionsUserIds(List.of(mentionedUserId))
+				.build();
+
+		
+		when(commentDao.findById(commentId)).thenReturn(Optional.of(comment));
+		
+		
+		when(usuarioService.findAllByIds(dtoUpdate.getMentionsUserIds()))
+				.thenReturn(new ArrayList<>(List.of(mentionedUser)));
+
+		when(commentDao.save(any(Comment.class))).thenAnswer(inv -> inv.getArgument(0));
+
+		ArgumentCaptor<Comment> commentCaptor = ArgumentCaptor.forClass(Comment.class);
+
+		// Act
+		CommentDto result = commentService.updateComment(commentId, dtoUpdate, authUserId);
+
+		// Assert
+		assertNotNull(result);
+		assertNotNull(result.getMentionsUserIds());
+		assertEquals(1, result.getMentionsUserIds().size());
+		assertEquals(mentionedUserId, result.getMentionsUserIds().get(0));
+		assertEquals(dtoUpdate.getBody(), result.getBody());
+		
+		verify(commentDao).save(commentCaptor.capture());
+		
+		assertEquals(1, commentCaptor.getValue().getMentions().size());
+		assertEquals(mentionedUser, commentCaptor.getValue().getMentions().get(0));
+	}
+
+	@Test
+	void updateComment_debeFiltrarAutoMencion_siUsuarioSeMencionaASiMismoEnUpdate() {
+		// Arrange
+		Long authUserId = 50L;   
+		Long otherUserId = 60L;   
+
+		Usuario authUser = new UsuarioTestDataBuilder().withId(authUserId).build();
+		Usuario otherUser = new UsuarioTestDataBuilder().withId(otherUserId).build();
+
+		Comment comment = new CommentTestDataBuilder()
+				.withId(faker.number().randomNumber())
+				.withAutor(authUser)
+				.build();
+
+		
+		CommentUpdateDto dtoUpdate = new CommentUpdateDtoTestDataBuilder()
+				.withMentionsUserIds(List.of(authUserId, otherUserId)) 
+				.build();
+
+		when(commentDao.findById(anyLong())).thenReturn(Optional.of(comment));
+
+		
+		when(usuarioService.findAllByIds(dtoUpdate.getMentionsUserIds()))
+				.thenReturn(new ArrayList<>(List.of(authUser, otherUser)));
+
+		when(commentDao.save(any(Comment.class))).thenAnswer(inv -> inv.getArgument(0));
+
+		// Act
+		CommentDto result = commentService.updateComment(comment.getId(), dtoUpdate, authUserId);
+
+		// Assert
+		assertNotNull(result.getMentionsUserIds());
+		assertEquals(1, result.getMentionsUserIds().size());
+		assertEquals(otherUserId, result.getMentionsUserIds().get(0));
+		
+		
+		verify(usuarioService).findAllByIds(anyList());
 	}
 	
 

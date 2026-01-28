@@ -224,12 +224,12 @@ public class CommentServiceImpl implements ICommentService {
 
 	@Override
 	@Transactional
-	public CommentDto updateComment(Long commentId, CommentUpdateDto dto, Long userId) {
+	public CommentDto updateComment(Long commentId, CommentUpdateDto dto, Long authUserId) {
 
 		Comment comment = commentDao.findById(commentId)
 				.orElseThrow(() -> new NoSuchElementException("Comentario no encontrado"));
 
-		if (comment.getAutor().getId() != userId) {
+		if (comment.getAutor().getId() != authUserId) {
 			throw new SecurityException("No tienes los permisos necesarios para este commentario");
 		}
 
@@ -238,13 +238,13 @@ public class CommentServiceImpl implements ICommentService {
 				: null;
 
 		if (mentions != null) {
-			mentions.removeIf(u -> u.getId() == userId);
+			mentions.removeIf(u -> u.getId() == authUserId);
 		}
 
 		comment.setBody(dto.getBody());
 		comment.setMentions(mentions);
 
-		commentDao.save(comment);
+		
 
 		return new CommentDto(commentDao.save(comment));
 	}
