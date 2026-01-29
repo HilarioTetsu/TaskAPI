@@ -32,7 +32,7 @@ public class InvitationDto {
 
     @Schema(
         description = "Identificador único de la invitación.",
-        example = "INV-20241201-ABC123"
+        example = "c6dfb42d-ef83-4531-9d20-0d20e61f5b8b"
     )
     private String id;
 

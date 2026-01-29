@@ -51,6 +51,10 @@ public class InvitationServiceImpl implements IInvitationService {
 		
 		Project project = projectService.findByProjectId(invitationDto.getProjectId()).orElseThrow(() -> new NoSuchElementException("Proyecto no encontrado"));
 		
+		if (!ProjectRole.existeRol(invitationDto.getRole().toString())) {
+			throw new IllegalArgumentException("Rol invalido");
+		}
+		
 		if (!projectMemberService.isOwner(authUserId, project.getIdGuid())) {
 			throw new SecurityException("No tienes los permisos para realizar esta acccion");
 		}						
@@ -59,9 +63,6 @@ public class InvitationServiceImpl implements IInvitationService {
 			throw new IllegalStateException("El usuario a invitar ya es miembro");
 		}
 		
-		if (!ProjectRole.existeRol(invitationDto.getRole().toString())) {
-			throw new IllegalArgumentException("Rol invalido");
-		}
 		
 		if (invitationDao.existsByProjectIdGuidAndGuestIdAndStatus(invitationDto.getProjectId(),invitationDto.getUserGuestId(),Constants.STATUS_PENDING)) {
 			throw new IllegalStateException("Existe una invitacion pendiente de ese usuario");
