@@ -49,7 +49,8 @@ public class InvitationServiceImpl implements IInvitationService {
 	@Transactional
 	public InvitationDto inviteUserToProject(InvitationDto invitationDto, Long authUserId) {
 		
-		Project project = projectService.findByProjectId(invitationDto.getProjectId()).orElseThrow(() -> new NoSuchElementException("Proyecto no encontrado"));
+		Project project = projectService.findByProjectId(invitationDto.getProjectId())
+		.orElseThrow(() -> new NoSuchElementException("Proyecto no encontrado"));
 		
 		if (!ProjectRole.existeRol(invitationDto.getRole().toString())) {
 			throw new IllegalArgumentException("Rol invalido");
