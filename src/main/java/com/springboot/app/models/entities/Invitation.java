@@ -47,10 +47,12 @@ public class Invitation {
     @Column(length = 20, nullable = false)
     @NotNull
 	private ProjectRole role;
-		
+	
+    
 	@NotNull
 	@Column(nullable = false)
 	private Short status;
+		
 	
 	@Column(name = "fecha_creacion")
 	@NotNull

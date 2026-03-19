@@ -42,8 +42,7 @@ public class Comment {
 	private Usuario autor;
 	
 	@Lob
-	@Column(columnDefinition = "TEXT")
-	
+	@Column(columnDefinition = "TEXT")	
 	private String body;
 	
 	@ManyToMany
